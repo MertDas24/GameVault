@@ -2,6 +2,7 @@ using GameVault.Business.Catalog;
 using GameVault.Business.Library;
 using GameVault.Business.Security;
 using GameVault.Models.Catalog;
+using GameVault.Models.Library;
 using GameVault.Web.Infrastructure;
 using GameVault.Web.Pages.Account;
 using Microsoft.AspNetCore.Mvc;
@@ -21,6 +22,13 @@ public sealed class NewModel(
 
     /// <summary>RAWG'dan doldurma başarısız olduysa kullanıcıya gösterilecek açıklama.</summary>
     public string? CatalogMessage { get; private set; }
+
+    /// <summary>Kullanıcı, aynı adlı oyun uyarısına rağmen eklemeyi onayladı.</summary>
+    [BindProperty]
+    public bool ConfirmDuplicateTitle { get; set; }
+
+    /// <summary>Kütüphanede aynı adı taşıyan oyunlar; doluysa kaydetmeden önce onay istenir.</summary>
+    public IReadOnlyList<SameTitleGame> SameTitleGames { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(int? rawgId, CancellationToken ct)
     {
@@ -66,6 +74,19 @@ public sealed class NewModel(
         {
             await LoadReferenceDataAsync(ct);
             return Page();
+        }
+
+        if (!ConfirmDuplicateTitle)
+        {
+            var sameTitle = await library.FindSameTitleAsync(CurrentUserId, Input.Title, ct);
+            // Aynı RAWG oyunu zaten varsa uyarı gösterilmez; servis eklemeyi kesin olarak reddeder.
+            var sameRawgGame = Input.RawgId is not null && sameTitle.Any(g => g.RawgId == Input.RawgId);
+            if (sameTitle.Count > 0 && !sameRawgGame)
+            {
+                SameTitleGames = sameTitle;
+                await LoadReferenceDataAsync(ct);
+                return Page();
+            }
         }
 
         var result = await library.CreateAsync(CurrentUserId, Input, ct);

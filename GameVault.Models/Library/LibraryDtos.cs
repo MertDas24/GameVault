@@ -35,6 +35,9 @@ public sealed record GameDetails(
 
 public sealed record ReferenceItem(int Id, string Name);
 
+/// <summary>Kullanıcının kütüphanesinde aynı adı taşıyan bir oyun (ekleme öncesi uyarı için).</summary>
+public sealed record SameTitleGame(Guid Id, string Title, string PlatformName, int? RawgId);
+
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount)
 {
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);

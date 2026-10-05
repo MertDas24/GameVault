@@ -33,9 +33,27 @@ else if (Model.CatalogEnabled && Model.Input.RawgId is null)
     {
         <input type="hidden" name="Input.RawgId" value="@rawgId">
     }
+    @if (Model.SameTitleGames.Count > 0)
+    {
+        <div class="alert alert-warning" role="alert" id="same-title-warning">
+            <p><strong>Kütüphanende aynı adlı bir oyun var.</strong> Aynı oyunu örneğin farklı bir platform için ayrı kayıt olarak tutmak istiyorsan yine de ekleyebilirsin.</p>
+            <ul>
+                @foreach (var same in Model.SameTitleGames)
+                {
+                    <li><a href="/Library/@same.Id">@same.Title</a> · @same.PlatformName</li>
+                }
+            </ul>
+            <p>Eklemek için formun altındaki <strong>“Yine de ekle”</strong> düğmesini kullan.</p>
+        </div>
+    }
     <partial name="_GameForm" model="Model" />
     <div class="form-actions">
         <a class="btn btn-ghost" href="/Library">Vazgeç</a>
         <button type="submit" class="btn btn-primary" data-busy-text="Kaydediliyor…">Kütüphaneye ekle</button>
+        @if (Model.SameTitleGames.Count > 0)
+        {
+            @* Enter tuşu formdaki ilk gönder düğmesini kullanır; onay düğmesi bilerek sonra gelir. *@
+            <button type="submit" name="ConfirmDuplicateTitle" value="true" class="btn btn-secondary" data-busy-text="Kaydediliyor…">Yine de ekle</button>
+        }
     </div>
 </form>

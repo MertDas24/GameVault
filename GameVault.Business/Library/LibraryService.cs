@@ -156,6 +156,27 @@ public sealed class LibraryService(
         };
     }
 
+    /// <summary>
+    /// Kullanıcının kütüphanesinde aynı adı taşıyan oyunlar. Karşılaştırma veritabanı harmanlamasına göre
+    /// büyük/küçük harf duyarsızdır. Bu bir kural değil, uyarıdır: aynı oyun farklı platformlarda ayrı kayıt olabilir.
+    /// </summary>
+    public async Task<IReadOnlyList<SameTitleGame>> FindSameTitleAsync(Guid userId, string title, CancellationToken ct = default)
+    {
+        var trimmed = title.Trim();
+        if (trimmed.Length == 0)
+        {
+            return [];
+        }
+
+        return await OwnedBy(userId)
+            .AsNoTracking()
+            .Where(g => g.Title == trimmed)
+            .OrderBy(g => g.DateAdded)
+            .Select(g => new SameTitleGame(g.Id, g.Title, g.Platform.Name, g.RawgId))
+            .Take(5)
+            .ToListAsync(ct);
+    }
+
     /// <summary>Verilen RAWG kimliklerinden hangilerinin kullanıcının kütüphanesinde olduğunu döner (RAWG kimliği → oyun kimliği).</summary>
     public async Task<IReadOnlyDictionary<int, Guid>> GetOwnedRawgIdsAsync(Guid userId, IReadOnlyCollection<int> rawgIds, CancellationToken ct = default)
     {

@@ -184,6 +184,10 @@ main:focus { outline: none; }
 .alert-success { background: var(--success-soft); border-color: #25604a; color: var(--success-text); }
 .alert-error { background: var(--danger-soft); border-color: #6d2a3a; color: var(--danger-text); }
 .alert-error a { color: #ffd0d7; }
+.alert-warning { background: #3b3014; border-color: #6b5420; color: var(--warning-text); }
+.alert-warning a { color: #ffe6b8; }
+.alert-warning p { margin: 0 0 .5rem; }
+.alert-warning ul { margin: 0 0 .75rem; }
 .alert ul { margin: 0; padding-left: 1.1rem; }
 .alert.validation-summary-valid { display: none; }
 
