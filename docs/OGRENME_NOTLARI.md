@@ -201,6 +201,28 @@ Her aşamada ne yapıldığı ve ne öğrenilebileceği.
 - Bulunan hata: `<details>` öğesine verilen `display: contents`, yeni Chromium sürümlerinde `::details-content`
   kutusu yüzünden çalışmıyor. Düzen artık bu numaraya dayanmıyor.
 
+### Aşama 3: Kimlik doğrulama, yetkilendirme ve izolasyon testleri
+Mevcut testler zaten kapsamlıydı. Eklenen testler, gerçek boşlukları kapatıyor:
+- **Tüm endpoint'leri tarayan yetki testi**
+  ([AuthorizationCoverageTests.cs](../tests/GameVault.Tests/AuthorizationCoverageTests.cs)). Eski test korumalı
+  sayfaları elle yazılmış bir listeden kontrol ediyordu; listeye eklenmeyen yeni bir sayfa hiç test edilmiyordu.
+  Yeni test `EndpointDataSource` ile uygulamadaki **tüm** adresleri bulur ve iki şeyi doğrular:
+  1. Herkese açık adresler, testteki `PublicRoutes` listesiyle birebir aynıdır. Yeni bir herkese açık sayfa
+     eklemek, bu listeyi bilerek değiştirmeyi gerektirir.
+  2. Geri kalan her adres, anonim kullanıcıyı giriş sayfasına yönlendirir.
+- **Testin testi (mutation check):** Testin gerçekten bir şey yakaladığını görmek için `Privacy` sayfasından
+  `[AllowAnonymous]` geçici olarak silindi; test kırıldı, sonra kod eski hâline getirildi. Hiç kırılmayan bir test
+  hiçbir şeyi korumuyor olabilir.
+- **Servis katmanı testi** (`IsolationTests.Service_layer_enforces_ownership_without_the_page_layer`): Sayfalar
+  atlanıp `LibraryService` ve `StatsService` doğrudan Bob'un kimliğiyle çağrılır. Sahiplik kuralı servis katmanında
+  olduğu için, ileride eklenecek bir API ya da arka plan işi de aynı korumadan yararlanır (*defense in depth*).
+  Testin başında sahibinin (Alice) kaydı görebildiği kontrol edilir. Bu "pozitif kontrol" olmasaydı, servis her
+  şeye `null` dönse bile test geçerdi.
+
+> **Mülakat sorusu:** "Testlerinin doğru şeyi test ettiğinden nasıl emin oluyorsun?"
+> **Cevap:** Kodu bilerek bozup testin kırıldığını görüyorum (mutation testing'in elle yapılan hali). Bir de
+> pozitif kontrol ekliyorum: "başkası göremez" testinin yanında "sahibi görebilir" kontrolü olmalı.
+
 ---
 
 ## Kendi notlarım

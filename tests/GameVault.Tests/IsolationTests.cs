@@ -1,7 +1,12 @@
 using System.Net;
 using System.Text.Json;
+using GameVault.Business.Library;
+using GameVault.Business.Stats;
+using GameVault.Entities;
+using GameVault.Models.Library;
 using GameVault.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GameVault.Tests;
 
@@ -105,6 +110,55 @@ public sealed class IsolationTests(GameVaultFactory factory) : IClassFixture<Gam
             Assert.DoesNotContain("passwordHash", json, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("securityStamp", json, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    /// <summary>
+    /// Sahiplik kontrolü sayfalarda değil, servis katmanında yapılır. Sayfalar atlanıp servisler
+    /// başka bir kullanıcının kimliğiyle çağrıldığında da hiçbir kayıt okunamaz ya da değiştirilemez.
+    /// </summary>
+    [Fact]
+    public async Task Service_layer_enforces_ownership_without_the_page_layer()
+    {
+        var aliceEmail = $"alice-{Guid.NewGuid():N}@example.test";
+        var bobEmail = $"bob-{Guid.NewGuid():N}@example.test";
+        using var alice = factory.CreateAppClient();
+        using var bob = factory.CreateAppClient();
+        await alice.RegisterAsync(aliceEmail);
+        await bob.RegisterAsync(bobEmail);
+        var platformId = await alice.GetPlatformIdAsync();
+        var gameId = await alice.CreateGameAsync("Servis Katmanı Oyunu", platformId, "Playing", ("Input.Rating", "8"));
+
+        var aliceId = await factory.WithDbAsync(db => db.Users.Where(u => u.Email == aliceEmail).Select(u => u.Id).SingleAsync());
+        var bobId = await factory.WithDbAsync(db => db.Users.Where(u => u.Email == bobEmail).Select(u => u.Id).SingleAsync());
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var library = scope.ServiceProvider.GetRequiredService<LibraryService>();
+        var stats = scope.ServiceProvider.GetRequiredService<StatsService>();
+
+        // Kontrol: sahibi kaydı görebiliyor (test boşuna geçmiyor).
+        Assert.NotNull(await library.GetAsync(aliceId, gameId));
+
+        Assert.Null(await library.GetAsync(bobId, gameId));
+        Assert.Null(await library.GetInputAsync(bobId, gameId));
+        Assert.Null(await library.ToggleFavoriteAsync(bobId, gameId));
+        Assert.False(await library.DeleteAsync(bobId, gameId));
+        var update = await library.UpdateAsync(bobId, gameId,
+            new GameInput { Title = "Bob değiştirdi", PlatformId = platformId, Status = GameStatus.Dropped });
+        Assert.True(update.NotFound);
+
+        var all = LibraryQuery.FromRaw(null, null, null, null, null, null, null, null);
+        Assert.Equal(0, (await library.SearchAsync(bobId, all)).TotalCount);
+        Assert.Equal(0, await library.CountAsync(bobId));
+        var bobStats = await stats.GetAsync(bobId);
+        Assert.Equal(0, bobStats.TotalGames);
+        Assert.Equal(0, bobStats.TotalPlaytimeHours);
+        Assert.Empty(bobStats.MostPlayed);
+
+        var game = await factory.WithDbAsync(db => db.LibraryGames.AsNoTracking().SingleAsync(g => g.Id == gameId));
+        Assert.Equal("Servis Katmanı Oyunu", game.Title);
+        Assert.Equal(GameStatus.Playing, game.Status);
+        Assert.False(game.IsFavorite);
+        Assert.Equal(aliceId, game.UserId);
     }
 
     [Fact]
