@@ -302,34 +302,35 @@ input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; accent-
 .feature p { margin: 0; color: var(--text-muted); }
 
 /* ---------- Kütüphane ---------- */
+/* Masaüstü: üstte arama + düğmeler, altta filtreler. Mobil: tek sütun, filtreler katlanabilir.
+   <details> içeriği Chromium'da ::details-content kutusuna sarıldığı için display: contents kullanılmaz. */
 .filters {
-    display: grid; grid-template-columns: minmax(200px, 2fr) repeat(5, minmax(130px, 1fr));
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
     gap: .75rem 1rem; align-items: end;
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 1rem; margin-bottom: 1rem;
 }
 .filters label { font-size: .85rem; color: var(--text-muted); }
+.filter-search { grid-column: 1; grid-row: 1; }
+.filter-actions { display: flex; gap: .5rem; grid-column: 2; grid-row: 1; justify-content: flex-end; }
+.filter-details { grid-column: 1 / -1; }
+.filter-details > summary { display: inline-flex; list-style: none; }
+.filter-details > summary::-webkit-details-marker { display: none; }
+/* site.js masaüstünde paneli açar; JavaScript yoksa düğme görünür kalır. */
+.filter-details[open] > summary { display: none; }
+.filter-body {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: .75rem 1rem; align-items: end;
+}
 .filter-fav { align-self: center; padding-top: 1.4rem; }
-/* Masaüstünde filtreler her zaman görünür; mobilde katlanabilir. */
-.filter-details { display: contents; }
-.filter-details > summary { display: none; }
-.filter-body { display: contents; }
 @media (max-width: 900px) {
     .filters { grid-template-columns: 1fr; }
-    .filter-details { display: block; }
-    .filter-details > summary { display: inline-flex; list-style: none; }
-    .filter-details > summary::-webkit-details-marker { display: none; }
-    .filter-details[open] > summary { margin-bottom: .75rem; }
-    .filter-body { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .filter-search, .filter-actions, .filter-details { grid-column: auto; grid-row: auto; }
+    .filter-details[open] > summary { display: inline-flex; margin-bottom: .75rem; }
+    .filter-body { grid-template-columns: 1fr 1fr; gap: .75rem; }
     .filter-body .filter-fav { grid-column: 1 / -1; padding-top: 0; }
     .filter-actions { justify-content: stretch; }
     .filter-actions .btn { flex: 1; }
-}
-.filter-actions { display: flex; gap: .5rem; grid-column: -3 / -1; justify-content: flex-end; }
-@media (max-width: 1200px) {
-    .filters { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-    .filter-search { grid-column: 1 / -1; }
-    .filter-actions { grid-column: auto; }
 }
 .input-icon { position: relative; }
 .input-icon .icon { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }

@@ -1,4 +1,6 @@
+using GameVault.Business.Library;
 using GameVault.Tests.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Playwright;
 
 namespace GameVault.E2E;
@@ -26,6 +28,13 @@ public sealed class E2EFixture : IAsyncLifetime
 
         _playwright = await Playwright.CreateAsync();
         Browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
+    }
+
+    /// <summary>Geçici test veritabanına kurgusal demo hesabını ve oyunlarını ekler.</summary>
+    public async Task SeedDemoAsync(string password)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<DemoDataSeeder>().SeedAsync(password);
     }
 
     public async ValueTask DisposeAsync()

@@ -26,6 +26,30 @@ silebilir. Arayüz Türkçe ve koyu temalıdır.
 > Bu bir **portfolyo projesidir**. Yerelde ve CI'da çalışır; hiçbir ortama dağıtılmamıştır ve gerçek kullanıcı
 > verisi toplamaz.
 
+## Ekran görüntüleri
+
+| Kütüphane | Oyun ayrıntısı |
+|---|---|
+| ![Arama, filtre ve kapak kartlarıyla kütüphane](docs/screenshots/library.png) | ![Oyun ayrıntı sayfası](docs/screenshots/details.png) |
+| **İstatistikler** | **Oyun ekleme** |
+| ![İstatistik ekranı](docs/screenshots/stats.png) | ![Hazır kapaklarla oyun ekleme formu](docs/screenshots/add-game.png) |
+
+<details>
+<summary>Açılış sayfası ve mobil görünüm</summary>
+
+| Açılış | Mobil |
+|---|---|
+| ![Açılış sayfası](docs/screenshots/landing.png) | <img src="docs/screenshots/mobile-library.png" alt="Alt gezinme çubuklu mobil kütüphane" width="300"> |
+
+</details>
+
+Görüntülerdeki veriler kurgusaldır. Görüntüleri bir Playwright testi üretir
+([ReadmeScreenshots.cs](tests/GameVault.E2E/ReadmeScreenshots.cs)); tek komutla yenilenebilir:
+
+```powershell
+$env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/GameVault.E2E
+```
+
 ## Öne çıkanlar
 
 - **Kullanıcı bazlı veri izolasyonu.** Her sorgu giriş yapan kullanıcıyla sınırlıdır. Entegrasyon testleri, bir
@@ -73,7 +97,24 @@ Durumlar: Başlamadım · Oynuyorum · Bitirdim · Ara verdim · Bıraktım · �
 
 ## Mimari
 
-Katmanlı bir çözüme sahip tek bir ASP.NET Core uygulaması:
+Katmanlı bir çözüme sahip tek bir ASP.NET Core uygulaması (bilinçli olarak monolit). Sayfalar iş katmanındaki
+servisleri çağırır, servisler EF Core üzerinden SQL Server'a erişir; hiçbir katman bir alttakini atlamaz.
+
+```mermaid
+flowchart LR
+    B([Tarayıcı]) -- "HTML formları + kimlik çerezi" --> W
+
+    subgraph App["ASP.NET Core süreci"]
+        W["GameVault.Web<br/>Razor Pages, kimlik doğrulama,<br/>güvenlik başlıkları"]
+        BL["GameVault.Business<br/>kütüphane, istatistik, hesap,<br/>oran sınırı, e-posta kuyruğu"]
+        D["GameVault.DataAccess<br/>EF Core DbContext"]
+        W --> BL --> D
+        W -. "oturum sorgusu<br/>(ITicketStore)" .-> D
+    end
+
+    D --> SQL[("SQL Server")]
+    BL -- "arka plan işçisi" --> SMTP["SMTP<br/>(yerelde Mailpit)"]
+```
 
 ```
 GameVault.Entities    → EF Core varlıkları (kullanıcılar, kütüphane oyunları, türler, platformlar, oturumlar…)
@@ -85,7 +126,47 @@ tests/GameVault.Tests → Birim ve entegrasyon testleri (gerçek SQL Server)
 tests/GameVault.E2E   → Playwright tarayıcı testleri
 ```
 
+### Veri modeli
+
+```mermaid
+erDiagram
+    AspNetUsers ||--o{ LibraryGames : "sahibidir"
+    AspNetUsers ||--o{ UserSessions : "oturum açar"
+    LibraryGames }o--|| Platforms : "oynanır"
+    LibraryGames }o--o{ Genres : "etiketlenir"
+
+    LibraryGames {
+        guid Id PK
+        string UserId FK
+        string Title
+        int Status "0-5"
+        int PlaytimeHours
+        int Rating "1-10, boş olabilir"
+        bool IsFavorite
+    }
+```
+
+Bir kullanıcı silindiğinde oyunları ve oturumları da silinir (cascade). Her kütüphane sorgusu `UserId` ile
+filtrelenir ve bileşik indeksler `UserId` ile başlar: veri izolasyonu ve sorgu hızı aynı sütuna dayanır.
+
 Tasarım kararları ve gerekçeleri: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+### Sayfalar ve endpoint'ler
+
+Uygulamanın herkese açık bir JSON API'si yoktur. Sayfalar sunucuda render edilir; her yazma işlemi antiforgery
+tokenı ile korunan bir HTML form gönderimidir.
+
+| Adres | Erişim | Amaç |
+|---|---|---|
+| `/` | herkese açık | Açılış sayfası |
+| `/Account/Register`, `/Account/Login`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Account/ConfirmEmail` | herkese açık | Kayıt ve giriş akışları |
+| `/Library` | kullanıcı | Oyunları arama, filtreleme, sıralama ve sayfalama (`?q=&status=&platform=&genre=&fav=&sort=&size=&page=`) |
+| `/Library/New`, `/Library/{id}`, `/Library/{id}/Edit`, `/Library/{id}/Delete` | kullanıcı (yalnızca sahibi) | Oyun ekleme, görüntüleme, düzenleme ve silme |
+| `/Stats` | kullanıcı | Kullanıcının kendi verisinden istatistikler |
+| `/Account/Settings`, `/Account/Export`, `/Account/Delete` | kullanıcı | Profil, parola, oturumlar, JSON dışa aktarma, hesap silme |
+| `/health` · `/health/live` | herkese açık | Hazırlık (veritabanı) ve canlılık kontrolü. Yalnızca `Healthy` ya da `Unhealthy` döner. |
+
+Başka bir kullanıcının oyununa yapılan istek 403 değil **404** döner; böylece oyunun var olduğu da belli olmaz.
 
 ## Yerelde çalıştırma
 
@@ -122,6 +203,25 @@ docker compose up --build
 ```
 
 Uygulama http://localhost:8080, Mailpit http://localhost:8025 adresinde çalışır.
+
+## Yapılandırma
+
+Yerel varsayılanlar [appsettings.Development.json](GameVault.Web/appsettings.Development.json) dosyasındadır ve sır
+içermez. `dotnet user-secrets` ya da ortam değişkenleriyle değiştirilebilir (`:` yerine `__` yazılır):
+
+| Değişken | Varsayılan (Development) | Amaç |
+|---|---|---|
+| `ConnectionStrings__DefaultConnection` | LocalDB `GameVaultDev` | SQL Server bağlantı dizesi |
+| `App__PublicBaseUrl` | `http://localhost:5226` | E-posta bağlantılarında kullanılan temel adres |
+| `App__DisplayTimeZone` | `Europe/Istanbul` | Tarihlerin gösterildiği saat dilimi (UTC saklanır) |
+| `Email__Host`, `Email__Port`, `Email__Security` | `localhost`, `1025`, `None` | SMTP sunucusu (yerelde Mailpit) |
+| `Email__FromAddress` | `no-reply@gamevault.test` | Gönderen adresi |
+| `Covers__AllowedHosts__0` | yok | Harici kapak adresleri için izin verilen ek alan adı |
+| `Seed__DemoPassword` | yok | İsteğe bağlı demo hesabının parolası (yalnızca user-secrets) |
+| `GAMEVAULT_TEST_SQLSERVER` | LocalDB | Entegrasyon testlerinin kullandığı SQL Server (veritabanı adı olmadan) |
+
+Uygulama başlangıçta yapılandırmasını doğrular; geçersiz anahtarları (değerlerini göstermeden) listeleyip başlamayı
+reddeder. Üretim için tam liste: [docs/OPERATIONS.md](docs/OPERATIONS.md).
 
 ## Testler
 

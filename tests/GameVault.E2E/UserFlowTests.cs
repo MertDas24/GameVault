@@ -103,6 +103,14 @@ public sealed class UserFlowTests(E2EFixture fixture) : IClassFixture<E2EFixture
         await Assertions.Expect(page.GetByRole(AriaRole.Button, new() { Name = "Favorilerden çıkar: Yıldız Tozu Kronikleri: Tam Sürüm" }))
             .ToHaveAttributeAsync("aria-pressed", "true");
 
+        // Masaüstünde filtreler açık ve yan yana dizili (tek sütuna yığılmamış)
+        var statusBox = await page.GetByLabel("Durum").BoundingBoxAsync();
+        var platformBox = await page.GetByRole(AriaRole.Combobox, new() { Name = "Platform", Exact = true }).BoundingBoxAsync();
+        Assert.NotNull(statusBox);
+        Assert.NotNull(platformBox);
+        Assert.Equal(statusBox.Y, platformBox.Y, 1.0);
+        Assert.True(platformBox.X > statusBox.X, "Platform filtresi Durum filtresinin sağında olmalı.");
+
         // Arama ve filtre
         await page.GetByLabel("Ara", new() { Exact = true }).FillAsync("tam sürüm");
         await page.GetByLabel("Yalnızca favoriler").CheckAsync();
