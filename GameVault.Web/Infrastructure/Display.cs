@@ -22,6 +22,10 @@ public sealed class Display
 
     public static string Date(DateOnly date) => date.ToString("d MMMM yyyy", Turkish);
 
+    /// <summary>Gösterim saat dilimindeki bugünün tarihi (UTC'deki tarih değil; ör. İstanbul'da gece 02:00).</summary>
+    public DateOnly Today(DateTimeOffset utcNow) =>
+        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(utcNow, _zone).DateTime);
+
     public static string Number(long value) => value.ToString("N0", Turkish);
 
     public static string Percent(double ratio) => ratio.ToString("P0", Turkish);

@@ -354,6 +354,50 @@ doğrudan RAWG'dan yüklediği için RAWG kullanıcının IP adresini görebilir
 > Arama etkileşimli bir işlem olduğu için yeniden deneme (retry) bilerek yok: kullanıcıyı 3 deneme boyunca
 > bekletmek yerine hemen mesaj göstermek daha iyi. Trafik artarsa Microsoft.Extensions.Http.Resilience'a geçilebilir.
 
+### Ara adım: aynı adlı oyun uyarısı
+- **Kural mı, uyarı mı?** RAWG oyununun tekrar eklenmesi **kural**dır (veritabanı engeller). Aynı adlı oyun ise
+  **uyarı**dır, çünkü aynı oyunu iki platformda ayrı tutmak meşru bir kullanım. Uyarı kullanıcıya karar bırakır:
+  "Yine de ekle" düğmesi var.
+- **Kontrol nerede?** Kural servis katmanında durur (her yoldan geçerli olmalı). Uyarı ise sayfa katmanındadır, çünkü
+  bu bir kullanıcı arayüzü akışı.
+- **Küçük ama önemli bir ayrıntı:** Bir formda Enter'a basıldığında tarayıcı **ilk** gönder düğmesini kullanır.
+  "Yine de ekle" ilk sırada olsaydı Enter tuşu uyarıyı sessizce atlardı. Bu yüzden onay düğmesi normal düğmeden sonra
+  geliyor ve bir test bunu kontrol ediyor.
+- Karşılaştırma büyük/küçük harf duyarsız. Bunu C# değil, SQL Server'ın harmanlaması (collation, `CI` = case
+  insensitive) sağlıyor.
+
+### Aşama 7: "Ne oynasam?"
+Sıradaki oyunlar ("Başlamadım", "Ara verdim", isteğe bağlı olarak "İstek listesi") arasından platform, tür ve en
+fazla tahmini süreye göre rastgele bir öneri yapar.
+
+- **Yeni veri: `EstimatedHours`.** "Oynama süresi" (şimdiye kadar oynadığın) ile "Tahmini süre" (oyunu bitirmek için
+  gereken) farklı kavramlar. İkisini aynı alana koymak, filtreyi anlamsız yapardı. RAWG'ın `playtime` alanı (ortalama
+  oynanma süresi, 0 = bilinmiyor) RAWG'dan eklenen oyunlarda bu alanı otomatik doldurur.
+- **Rastgele seçim veritabanında yapılır** ([SuggestionService.cs](../GameVault.Business/Library/SuggestionService.cs)):
+  önce filtrelere uyan oyunlar sayılır, ardından `Skip(rastgele).Take(1)` ile tek bir kayıt çekilir. Kütüphanenin
+  tamamı belleğe yüklenmez. 5000 oyunluk bir kütüphanede de yalnızca iki küçük sorgu çalışır. `OrderBy(Id)`
+  zorunludur: sırasız bir `Skip`'in sonucu SQL'de tanımsızdır.
+- **Bilinmeyen değerler sessizce kaybolmaz:** "En fazla 10 saat" filtresinde tahmini süresi girilmemiş oyunlar
+  elenir, ama kaç tane olduğu kullanıcıya söylenir. Kullanıcı neden az sonuç gördüğünü anlar.
+- **"Başka öner":** Az önce önerilen oyun bir sonraki öneride hariç tutulur. Tek aday varsa hariç tutma yok
+  sayılır; aksi hâlde "oyun yok" demek yanlış olurdu.
+- **Geçersiz girdi hata sayfası değildir:** `?platform=abc&maxHours=999999` gibi bozuk adresler filtresiz öneri üretir.
+  Değerler `SuggestionFilter.Normalize` ile temizlenir.
+- **"Oynamaya başla":** Oyunu "Oynuyorum" yapar, başlama tarihi boşsa bugünü yazar.
+  - **Saat dilimi tuzağı:** "Bugün" UTC'ye göre hesaplansaydı, Türkiye'de gece 00:00–03:00 arasında tarih bir gün
+    geri giderdi. Tarih, uygulamanın gösterim saat dilimine (`Europe/Istanbul`) göre hesaplanıp servise parametre
+    olarak verilir. Servis "bugün"ü kendisi bilmez; bu da onu test edilebilir yapar.
+- **Testler:** Öneri yalnızca sıradaki oyunlardan geliyor mu? Bunu doğrulamak için seçim 40 kez tekrarlanır ve iki
+  adayın da görüldüğü kontrol edilir (tesadüfen geçme olasılığı yaklaşık 10⁻¹²). Ayrıca başka kullanıcının oyununun
+  ne önerilebildiği ne de "Oynamaya başla" ile değiştirilebildiği test edilir. 3. aşamadaki yetki kapsama testi yeni
+  `/Suggest` sayfasını kendiliğinden bulup korumalı olduğunu doğruladı; o testin amacı buydu.
+- **Erişilebilirlik:** Öneri ve RAWG arama sayfaları axe-core denetimine eklendi.
+
+> **Mülakat sorusu:** "Veritabanından rastgele bir satırı nasıl seçersin?"
+> **Cevap:** `ORDER BY NEWID()` kısa ama tüm tabloyu sıralar. Ben önce `COUNT` alıp rastgele bir konum seçiyorum,
+> sonra `ORDER BY Id OFFSET n ROWS FETCH NEXT 1` ile tek satırı çekiyorum. Kullanıcının kütüphanesi `UserId`
+> indeksiyle zaten küçük bir kümeye indiği için iki yöntem de hızlı; ama ikincisi büyük tablolarda da ölçeklenir.
+
 ---
 
 ## Kendi notlarım

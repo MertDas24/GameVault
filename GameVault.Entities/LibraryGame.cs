@@ -33,6 +33,12 @@ public class LibraryGame
     public DateOnly? ReleaseDate { get; set; }
 
     /// <summary>
+    /// Oyunu bitirmek için tahmini süre (saat). Kullanıcının oynadığı süreden (PlaytimeHours) farklıdır;
+    /// RAWG'ın ortalama oynanma süresinden doldurulabilir. "Ne oynasam?" filtresinde kullanılır.
+    /// </summary>
+    public int? EstimatedHours { get; set; }
+
+    /// <summary>
     /// Oyun RAWG aramasından eklendiyse RAWG'daki kimliği. Yalnızca oluştururken atanır;
     /// aynı kullanıcı aynı RAWG oyununu ikinci kez ekleyemez (benzersiz filtreli indeks).
     /// </summary>

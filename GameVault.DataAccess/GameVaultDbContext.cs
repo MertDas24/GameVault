@@ -60,6 +60,7 @@ public class GameVaultDbContext(DbContextOptions<GameVaultDbContext> options)
                 t.HasCheckConstraint("CK_LibraryGames_PlaytimeHours", "[PlaytimeHours] >= 0 AND [PlaytimeHours] <= 100000");
                 t.HasCheckConstraint("CK_LibraryGames_Status", "[Status] >= 0 AND [Status] <= 5");
                 t.HasCheckConstraint("CK_LibraryGames_RawgId", "[RawgId] IS NULL OR [RawgId] > 0");
+                t.HasCheckConstraint("CK_LibraryGames_EstimatedHours", "[EstimatedHours] IS NULL OR ([EstimatedHours] >= 1 AND [EstimatedHours] <= 1000)");
             });
 
             entity.Property(g => g.Title).IsRequired().HasMaxLength(TitleMaxLength);

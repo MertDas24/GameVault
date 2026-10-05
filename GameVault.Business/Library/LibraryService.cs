@@ -116,6 +116,7 @@ public sealed class LibraryService(
                 g.DateAdded,
                 g.UpdatedAtUtc,
                 g.ReleaseDate,
+                g.EstimatedHours,
                 g.RawgId
             })
             .FirstOrDefaultAsync(ct);
@@ -125,7 +126,7 @@ public sealed class LibraryService(
             : new GameDetails(
                 game.Id, game.Title, game.Description, game.CoverImageUrl, game.PlatformId, game.PlatformName,
                 game.Genres, game.Status, game.Rating, game.PlaytimeHours, game.IsFavorite, game.Notes,
-                game.StartDate, game.CompletionDate, game.DateAdded, game.UpdatedAtUtc, game.ReleaseDate, game.RawgId);
+                game.StartDate, game.CompletionDate, game.DateAdded, game.UpdatedAtUtc, game.ReleaseDate, game.RawgId, game.EstimatedHours);
     }
 
     public async Task<GameInput?> GetInputAsync(Guid userId, Guid id, CancellationToken ct = default)
@@ -152,7 +153,8 @@ public sealed class LibraryService(
             IsFavorite = details.IsFavorite,
             StartDate = details.StartDate,
             CompletionDate = details.CompletionDate,
-            ReleaseDate = details.ReleaseDate
+            ReleaseDate = details.ReleaseDate,
+            EstimatedHours = details.EstimatedHours
         };
     }
 
@@ -280,6 +282,25 @@ public sealed class LibraryService(
         return game.IsFavorite;
     }
 
+    /// <summary>
+    /// Oyunu "Oynuyorum" olarak işaretler; başlama tarihi boşsa <paramref name="today"/> yazılır
+    /// (kullanıcının saat dilimindeki tarih). Kayıt yoksa ya da başkasına aitse false döner.
+    /// </summary>
+    public async Task<bool> StartPlayingAsync(Guid userId, Guid id, DateOnly today, CancellationToken ct = default)
+    {
+        var game = await OwnedBy(userId).FirstOrDefaultAsync(g => g.Id == id, ct);
+        if (game is null)
+        {
+            return false;
+        }
+
+        game.Status = GameStatus.Playing;
+        game.StartDate ??= today;
+        game.UpdatedAtUtc = time.GetUtcNow().UtcDateTime;
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
     private static void Apply(LibraryGame game, GameInput input, ValidatedInput validated, DateTime now)
     {
         // Güncellenebilir alanlar burada açıkça listelenir; UserId, Id ve DateAdded değiştirilmez.
@@ -295,6 +316,7 @@ public sealed class LibraryService(
         game.StartDate = input.StartDate;
         game.CompletionDate = input.CompletionDate;
         game.ReleaseDate = input.ReleaseDate;
+        game.EstimatedHours = input.EstimatedHours;
         game.UpdatedAtUtc = now;
 
         game.Genres.Clear();

@@ -69,6 +69,12 @@ public sealed class GameInput
     [Display(Name = "Çıkış tarihi")]
     public DateOnly? ReleaseDate { get; set; }
 
+    public const int MaxEstimatedHours = 1000;
+
+    [Display(Name = "Tahmini süre (saat)")]
+    [Range(1, MaxEstimatedHours, ErrorMessage = "Tahmini süre 1 ile 1000 saat arasında olmalı.")]
+    public int? EstimatedHours { get; set; }
+
     /// <summary>
     /// RAWG aramasından seçildiyse RAWG kimliği. Yalnızca yeni oyun oluştururken dikkate alınır;
     /// güncellemede yok sayılır.

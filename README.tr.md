@@ -32,15 +32,17 @@ silebilir. Arayüz Türkçe ve koyu temalıdır.
 | Kütüphane | Oyun ayrıntısı |
 |---|---|
 | ![Arama, filtre ve kapak kartlarıyla kütüphane](docs/screenshots/library.png) | ![Oyun ayrıntı sayfası](docs/screenshots/details.png) |
-| **İstatistikler** | **Oyun ekleme** |
-| ![İstatistik ekranı](docs/screenshots/stats.png) | ![Hazır kapaklarla oyun ekleme formu](docs/screenshots/add-game.png) |
+| **Ne oynasam?** | **İstatistikler** |
+| ![Platform, tür ve en fazla süre filtreleriyle sıradaki oyunlardan rastgele öneri](docs/screenshots/suggest.png) | ![İstatistik ekranı](docs/screenshots/stats.png) |
 
 <details>
-<summary>Açılış sayfası ve mobil görünüm</summary>
+<summary>Ekleme formu, açılış sayfası ve mobil görünüm</summary>
 
-| Açılış | Mobil |
+| Oyun ekleme | Açılış |
 |---|---|
-| ![Açılış sayfası](docs/screenshots/landing.png) | <img src="docs/screenshots/mobile-library.png" alt="Alt gezinme çubuklu mobil kütüphane" width="300"> |
+| ![Hazır kapaklarla oyun ekleme formu](docs/screenshots/add-game.png) | ![Açılış sayfası](docs/screenshots/landing.png) |
+| **Mobil** | |
+| <img src="docs/screenshots/mobile-library.png" alt="Alt gezinme çubuklu mobil kütüphane" width="300"> | |
 
 </details>
 
@@ -70,7 +72,7 @@ $env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/Game
   sınırlı bir önbellek ve basit bir devre kesici vardır. RAWG hata verirse sayfa bir mesaj gösterir, uygulamanın geri
   kalanı çalışmaya devam eder. RAWG'a yalnızca arama metni gider. API anahtarı User Secrets'ta durur ve loglara asla
   yazılmaz; bunu bir test doğrular.
-- **Gerçek testler.** 180'den fazla entegrasyon testi `WebApplicationFactory` üzerinden gerçek bir SQL Server'a karşı
+- **Gerçek testler.** 200'den fazla entegrasyon testi `WebApplicationFactory` üzerinden gerçek bir SQL Server'a karşı
   çalışır. Playwright E2E testleri masaüstü ve mobil akışları kapsar, axe-core da erişilebilirliği (WCAG 2.1 A/AA)
   denetler.
 - **Sıkı derleme.** Uyarılar hata sayılır, analizörler `latest-recommended` seviyesinde çalışır, paket sürümleri
@@ -81,8 +83,9 @@ $env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/Game
 | Alan | İçerik |
 |---|---|
 | Kütüphane | Kapak odaklı kartlar; ada göre arama; durum, platform, tür ve favori filtreleri; 7 sıralama; sayfalama |
-| Oyunlar | Ad, kapak (8 hazır kapak ya da izinli https adresi), açıklama, platform, en fazla 5 tür, durum, süre, 1–10 puan, notlar, başlama, bitirme ve çıkış tarihleri, favori |
+| Oyunlar | Ad, kapak (8 hazır kapak ya da izinli https adresi), açıklama, platform, en fazla 5 tür, durum, süre, 1–10 puan, notlar, başlama, bitirme ve çıkış tarihleri, tahmini bitirme süresi, favori. Kütüphanede aynı adlı oyun varsa eklemeden önce uyarır. |
 | RAWG araması | [RAWG](https://rawg.io)'da isimle arama; kapak, çıkış tarihi, platform ve türleri görüp bir sonucu seçerek ekleme formunu doldurma. Her kullanıcı bir RAWG oyununu yalnızca bir kez ekleyebilir. |
+| Ne oynasam? | Sıradaki oyunlardan (başlanmamış, ara verilmiş, isteğe bağlı olarak istek listesi) platform, tür ve en fazla tahmini süreye göre rastgele öneri. “Başka öner” son öneriyi atlar, “Oynamaya başla” oyunu “Oynuyorum” olarak işaretler. |
 | İstatistikler | Toplam oyun ve süre, ortalama puan, tamamlama oranı, durum dağılımı, en çok kullanılan platform ve türler, en çok oynananlar |
 | Hesap | E-posta doğrulamalı kayıt, parola sıfırlama, görünen ad, parola değiştirme, diğer oturumları kapatma, JSON dışa aktarma, hesap silme |
 | Arayüz | Masaüstünde yan menü, mobilde alt gezinme çubuğu; klavyeyle kullanım; `aria-invalid` ile form hataları; azaltılmış hareket desteği |
@@ -153,6 +156,7 @@ erDiagram
         bool IsFavorite
         date ReleaseDate "boş olabilir"
         int RawgId "boş olabilir, kullanıcı başına benzersiz"
+        int EstimatedHours "boş olabilir, 1-1000"
     }
 ```
 
@@ -174,6 +178,7 @@ tokenı ile korunan bir HTML form gönderimidir.
 | `/Library` | kullanıcı | Oyunları arama, filtreleme, sıralama ve sayfalama (`?q=&status=&platform=&genre=&fav=&sort=&size=&page=`) |
 | `/Library/New`, `/Library/{id}`, `/Library/{id}/Edit`, `/Library/{id}/Delete` | kullanıcı (yalnızca sahibi) | Oyun ekleme, görüntüleme, düzenleme ve silme |
 | `/Library/Search?q=` · `/Library/New?rawgId=` | kullanıcı | RAWG'da arama ve seçilen sonuçla ekleme formunu doldurma |
+| `/Suggest?platform=&genre=&maxHours=&wishlist=` | kullanıcı | “Ne oynasam?” önerisi. `handler=Start` ile yapılan POST, oyunu “Oynuyorum” olarak işaretler. |
 | `/Stats` | kullanıcı | Kullanıcının kendi verisinden istatistikler |
 | `/Account/Settings`, `/Account/Export`, `/Account/Delete` | kullanıcı | Profil, parola, oturumlar, JSON dışa aktarma, hesap silme |
 | `/health` · `/health/live` | herkese açık | Hazırlık (veritabanı) ve canlılık kontrolü. Yalnızca `Healthy` ya da `Unhealthy` döner. |

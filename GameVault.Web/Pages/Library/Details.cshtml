@@ -27,6 +27,10 @@
         <dl class="facts">
             <div><dt>Kişisel puan</dt><dd>@(g.Rating is { } r ? $"{r} / 10" : "Puanlanmadı")</dd></div>
             <div><dt>Oynama süresi</dt><dd>@Display.Number(g.PlaytimeHours) saat</dd></div>
+            @if (g.EstimatedHours is { } estimated)
+            {
+                <div><dt>Tahmini süre</dt><dd>~@Display.Number(estimated) saat</dd></div>
+            }
             <div><dt>Türler</dt><dd>@(g.Genres.Count > 0 ? string.Join(", ", g.Genres.Select(x => x.Name)) : "Belirtilmedi")</dd></div>
             @if (g.ReleaseDate is { } released)
             {

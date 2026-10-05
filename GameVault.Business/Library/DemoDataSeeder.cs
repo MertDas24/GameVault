@@ -13,17 +13,17 @@ public sealed class DemoDataSeeder(GameVaultDbContext db, UserManager<Applicatio
 {
     public const string DemoEmail = "demo@gamevault.test";
 
-    private static readonly (string Title, string Platform, string[] Genres, GameStatus Status, int Hours, int? Rating, bool Fav, string Cover, string? Description)[] Games =
+    private static readonly (string Title, string Platform, string[] Genres, GameStatus Status, int Hours, int? Rating, bool Fav, string Cover, string? Description, int? Estimate)[] Games =
     [
-        ("Yıldız Tozu Kronikleri", "PC", ["Rol Yapma (RPG)", "Macera"], GameStatus.Playing, 42, 9, true, "nebula", "Terk edilmiş bir uzay istasyonunda geçen, seçimlerin önemli olduğu kurgusal bir rol yapma oyunu."),
-        ("Neon Kaçış 2088", "PlayStation 5", ["Aksiyon", "Platform"], GameStatus.Completed, 18, 8, false, "neon-grid", "Hızlı tempolu, ritim tabanlı bir platform oyunu."),
-        ("Kadim Ormanın Bekçisi", "Nintendo Switch", ["Macera", "Bulmaca"], GameStatus.OnHold, 11, null, false, "forest", null),
-        ("Zindan Ustası: Sonsuz Katlar", "PC", ["Roguelike", "Strateji"], GameStatus.Playing, 67, 10, true, "dungeon", "Her girişte değişen katlar ve kalıcı yükseltmeler."),
-        ("Asfalt Fırtınası", "Xbox Series X|S", ["Yarış"], GameStatus.Dropped, 3, 4, false, "racer", null),
-        ("Derin Mavi Keşif", "PC", ["Simülasyon", "Hayatta Kalma"], GameStatus.NotStarted, 0, null, false, "ocean", "Okyanus tabanında üs kurma simülasyonu."),
-        ("Kum Saatinin Sırrı", "PlayStation 4", ["Bulmaca", "Macera"], GameStatus.Completed, 9, 7, false, "desert", null),
-        ("Devre Kırıcı", "PC", ["Strateji"], GameStatus.Wishlist, 0, null, false, "circuit", "Siber güvenlik temalı kurgusal bir sıra tabanlı strateji oyunu."),
-        ("Çok Uzun Adlı Bir Oyun: Unutulmuş Krallıkların Son Muhafızının Destansı ve Bitmek Bilmeyen Yolculuğu", "PC", ["Rol Yapma (RPG)"], GameStatus.NotStarted, 0, null, false, "", "Uzun başlıkların arayüzde düzgün göründüğünü denemek için.")
+        ("Yıldız Tozu Kronikleri", "PC", ["Rol Yapma (RPG)", "Macera"], GameStatus.Playing, 42, 9, true, "nebula", "Terk edilmiş bir uzay istasyonunda geçen, seçimlerin önemli olduğu kurgusal bir rol yapma oyunu.", 60),
+        ("Neon Kaçış 2088", "PlayStation 5", ["Aksiyon", "Platform"], GameStatus.Completed, 18, 8, false, "neon-grid", "Hızlı tempolu, ritim tabanlı bir platform oyunu.", 12),
+        ("Kadim Ormanın Bekçisi", "Nintendo Switch", ["Macera", "Bulmaca"], GameStatus.OnHold, 11, null, false, "forest", null, 25),
+        ("Zindan Ustası: Sonsuz Katlar", "PC", ["Roguelike", "Strateji"], GameStatus.Playing, 67, 10, true, "dungeon", "Her girişte değişen katlar ve kalıcı yükseltmeler.", 40),
+        ("Asfalt Fırtınası", "Xbox Series X|S", ["Yarış"], GameStatus.Dropped, 3, 4, false, "racer", null, 15),
+        ("Derin Mavi Keşif", "PC", ["Simülasyon", "Hayatta Kalma"], GameStatus.NotStarted, 0, null, false, "ocean", "Okyanus tabanında üs kurma simülasyonu.", 30),
+        ("Kum Saatinin Sırrı", "PlayStation 4", ["Bulmaca", "Macera"], GameStatus.Completed, 9, 7, false, "desert", null, 8),
+        ("Devre Kırıcı", "PC", ["Strateji"], GameStatus.Wishlist, 0, null, false, "circuit", "Siber güvenlik temalı kurgusal bir sıra tabanlı strateji oyunu.", 20),
+        ("Çok Uzun Adlı Bir Oyun: Unutulmuş Krallıkların Son Muhafızının Destansı ve Bitmek Bilmeyen Yolculuğu", "PC", ["Rol Yapma (RPG)"], GameStatus.NotStarted, 0, null, false, "", "Uzun başlıkların arayüzde düzgün göründüğünü denemek için.", null)
     ];
 
     public async Task<bool> SeedAsync(string demoPassword, CancellationToken ct = default)
@@ -70,6 +70,7 @@ public sealed class DemoDataSeeder(GameVaultDbContext db, UserManager<Applicatio
                 PlaytimeHours = g.Hours,
                 Rating = g.Rating,
                 IsFavorite = g.Fav,
+                EstimatedHours = g.Estimate,
                 DateAdded = added,
                 UpdatedAtUtc = added
             });

@@ -17,6 +17,7 @@ public sealed class FakeRawgHandler : HttpMessageHandler
           "id": 9767,
           "name": "Hollow Knight",
           "released": "2017-02-24",
+          "playtime": 26,
           "background_image": "https://media.rawg.io/media/games/4cf/4cfc6b7f1850590a4634b08bfab308ab.jpg",
           "platforms": [
             { "platform": { "id": 4, "slug": "pc", "name": "PC" } },

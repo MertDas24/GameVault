@@ -92,6 +92,12 @@
                 <input asp-for="Input.ReleaseDate" type="date" min="1950-01-01">
                 <span asp-validation-for="Input.ReleaseDate" id="Input_ReleaseDate-error" class="field-error"></span>
             </div>
+            <div class="field">
+                <label asp-for="Input.EstimatedHours">Tahmini süre (saat)</label>
+                <input asp-for="Input.EstimatedHours" type="number" min="1" max="1000" step="1" inputmode="numeric" aria-describedby="estimated-hint">
+                <p id="estimated-hint" class="hint">Oyunu bitirmek için tahmini süre; “Ne oynasam?” filtresinde kullanılır.</p>
+                <span asp-validation-for="Input.EstimatedHours" id="Input_EstimatedHours-error" class="field-error"></span>
+            </div>
         </div>
 
         <div class="field">

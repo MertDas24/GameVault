@@ -43,6 +43,10 @@ public sealed class ReadmeScreenshots(E2EFixture fixture) : IClassFixture<E2EFix
 
             await page.GotoAsync(fixture.BaseUrl + "/Stats");
             await Shot(page, outDir!, "stats");
+
+            // Süre filtresiyle: hem filtreyi gösterir hem de tahmini süresi bilinen bir oyun seçilir.
+            await page.GotoAsync(fixture.BaseUrl + "/Suggest?maxHours=40");
+            await Shot(page, outDir!, "suggest");
         }
 
         var mobile = await fixture.Browser.NewContextAsync(new BrowserNewContextOptions

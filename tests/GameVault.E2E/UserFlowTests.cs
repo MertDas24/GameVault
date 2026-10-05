@@ -265,7 +265,7 @@ public sealed class UserFlowTests(E2EFixture fixture) : IClassFixture<E2EFixture
         await page.GetByRole(AriaRole.Link, new() { Name = "Sil…" }).ClickAsync();
         await Audit("silme onayı");
 
-        foreach (var url in new[] { "/Library", "/Stats", "/Account/Settings", "/Account/Delete", "/Account/Export" })
+        foreach (var url in new[] { "/Library", "/Stats", "/Suggest", "/Suggest?maxHours=1", "/Library/Search", "/Account/Settings", "/Account/Delete", "/Account/Export" })
         {
             await page.GotoAsync(fixture.BaseUrl + url);
             await Audit(url);

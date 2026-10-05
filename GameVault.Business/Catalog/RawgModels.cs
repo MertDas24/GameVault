@@ -12,7 +12,8 @@ internal sealed record RawgGame(
     string? Released,
     string? BackgroundImage,
     IReadOnlyList<RawgPlatformEntry>? Platforms,
-    IReadOnlyList<RawgNamed>? Genres);
+    IReadOnlyList<RawgNamed>? Genres,
+    int? Playtime = null);
 
 internal sealed record RawgPlatformEntry(RawgNamed? Platform);
 

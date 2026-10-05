@@ -62,7 +62,9 @@ public static partial class RawgMapping
             SafeCoverUrl(game.BackgroundImage),
             ParseDate(game.Released),
             CleanTags(game.Platforms?.Select(p => p.Platform)),
-            CleanTags(game.Genres));
+            CleanTags(game.Genres),
+            // RAWG ortalama oynanma süresi; 0 "bilinmiyor" demektir.
+            game.Playtime is >= 1 and <= GameInput.MaxEstimatedHours ? game.Playtime : null);
     }
 
     /// <summary>
@@ -97,6 +99,7 @@ public static partial class RawgMapping
             Title = game.Name,
             RawgId = game.RawgId,
             ReleaseDate = game.Released,
+            EstimatedHours = game.EstimatedHours,
             PlatformId = platformId,
             GenreIds = mappedGenres,
             CoverChoice = game.CoverUrl is null ? CoverChoices.None : CoverChoices.Url,

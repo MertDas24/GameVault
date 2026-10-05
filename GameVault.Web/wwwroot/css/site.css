@@ -137,7 +137,7 @@ main:focus { outline: none; }
     }
     .layout-app .main { margin-left: 0; padding: 1.25rem 1rem 6.5rem; }
     .bottom-nav {
-        display: grid; grid-template-columns: repeat(4, 1fr);
+        display: grid; grid-template-columns: repeat(5, 1fr);
         position: fixed; inset: auto 0 0 0; z-index: 20;
         background: var(--bg-elevated); border-top: 1px solid var(--border);
         padding: .35rem .25rem calc(.35rem + env(safe-area-inset-bottom));
@@ -399,6 +399,20 @@ input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; accent-
 .prose { white-space: pre-line; overflow-wrap: anywhere; max-width: 70ch; }
 .detail-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
 .detail-actions form { margin: 0; }
+
+/* ---------- Ne oynasam? ---------- */
+.suggestion { display: grid; grid-template-columns: minmax(160px, 240px) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.cover-suggestion { border-radius: var(--radius); border: 1px solid var(--border); }
+.suggestion-body { display: grid; gap: .75rem; min-width: 0; }
+.suggestion-eyebrow { margin: 0; color: var(--accent-2); font-size: .85rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.suggestion-title { margin: 0; font-size: clamp(1.4rem, 3vw, 2rem); overflow-wrap: anywhere; }
+.suggestion-title a { color: var(--text); text-decoration: none; }
+.suggestion-title a:hover { text-decoration: underline; }
+.suggestion .facts { margin: 0; }
+@media (max-width: 600px) {
+    .suggestion { grid-template-columns: 1fr; }
+    .cover-suggestion { max-width: 200px; }
+}
 
 /* ---------- RAWG araması ---------- */
 .catalog-results { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }

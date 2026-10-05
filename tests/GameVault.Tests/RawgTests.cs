@@ -99,6 +99,7 @@ public sealed class RawgTests(RawgFactory factory) : IClassFixture<RawgFactory>
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal("Hollow Knight", doc.QuerySelector("#Input_Title")!.GetAttribute("value"));
             Assert.Equal("2017-02-24", doc.QuerySelector("#Input_ReleaseDate")!.GetAttribute("value"));
+            Assert.Equal("26", doc.QuerySelector("#Input_EstimatedHours")!.GetAttribute("value"));
             Assert.Equal(HollowKnightId.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 doc.QuerySelector("input[type=hidden][name='Input.RawgId']")!.GetAttribute("value"));
             Assert.Equal(CropCover, doc.QuerySelector("#Input_CoverUrl")!.GetAttribute("value"));

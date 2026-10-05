@@ -139,6 +139,20 @@ public sealed class GameCatalogTests
         Assert.Null(RawgMapping.ToCatalogGame(new RawgGame(7, "   ", null, null, null, null)));
     }
 
+    [Theory]
+    [InlineData(62, 62)]
+    [InlineData(1, 1)]
+    [InlineData(0, null)]      // RAWG'da 0 "bilinmiyor" demektir
+    [InlineData(-5, null)]
+    [InlineData(5000, null)]   // makul olmayan değer
+    [InlineData(null, null)]
+    public void Rawg_playtime_becomes_the_estimated_hours(int? playtime, int? expected)
+    {
+        var game = RawgMapping.ToCatalogGame(new RawgGame(1, "Süre", null, null, null, null, playtime));
+        Assert.Equal(expected, game!.EstimatedHours);
+        Assert.Equal(expected, RawgMapping.ToGameInput(game, [], []).EstimatedHours);
+    }
+
     [Fact]
     public void Mapping_to_game_input_uses_gamevault_reference_data_only()
     {

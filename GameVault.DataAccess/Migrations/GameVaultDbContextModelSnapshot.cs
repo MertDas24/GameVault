@@ -136,6 +136,9 @@ namespace GameVault.DataAccess.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
+                    b.Property<int?>("EstimatedHours")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsFavorite")
                         .HasColumnType("bit");
 
@@ -193,6 +196,8 @@ namespace GameVault.DataAccess.Migrations
 
                     b.ToTable("LibraryGames", null, t =>
                         {
+                            t.HasCheckConstraint("CK_LibraryGames_EstimatedHours", "[EstimatedHours] IS NULL OR ([EstimatedHours] >= 1 AND [EstimatedHours] <= 1000)");
+
                             t.HasCheckConstraint("CK_LibraryGames_PlaytimeHours", "[PlaytimeHours] >= 0 AND [PlaytimeHours] <= 100000");
 
                             t.HasCheckConstraint("CK_LibraryGames_Rating", "[Rating] IS NULL OR ([Rating] >= 1 AND [Rating] <= 10)");

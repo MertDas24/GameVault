@@ -31,7 +31,8 @@ public sealed record GameDetails(
     DateTime DateAdded,
     DateTime UpdatedAtUtc,
     DateOnly? ReleaseDate = null,
-    int? RawgId = null);
+    int? RawgId = null,
+    int? EstimatedHours = null);
 
 public sealed record ReferenceItem(int Id, string Name);
 

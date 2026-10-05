@@ -31,15 +31,17 @@ see statistics, and export or delete all of their data. The UI is in Turkish and
 | Library | Game details |
 |---|---|
 | ![Library with search, filters and cover cards](docs/screenshots/library.png) | ![Game details page](docs/screenshots/details.png) |
-| **Statistics** | **Add a game** |
-| ![Statistics dashboard](docs/screenshots/stats.png) | ![Add game form with built-in covers](docs/screenshots/add-game.png) |
+| **What should I play?** | **Statistics** |
+| ![Random pick from the backlog with platform, genre and max hours filters](docs/screenshots/suggest.png) | ![Statistics dashboard](docs/screenshots/stats.png) |
 
 <details>
-<summary>Landing page and mobile layout</summary>
+<summary>Add form, landing page and mobile layout</summary>
 
-| Landing | Mobile |
+| Add a game | Landing |
 |---|---|
-| ![Landing page](docs/screenshots/landing.png) | <img src="docs/screenshots/mobile-library.png" alt="Mobile library with bottom navigation" width="300"> |
+| ![Add game form with built-in covers](docs/screenshots/add-game.png) | ![Landing page](docs/screenshots/landing.png) |
+| **Mobile** | |
+| <img src="docs/screenshots/mobile-library.png" alt="Mobile library with bottom navigation" width="300"> | |
 
 </details>
 
@@ -69,7 +71,7 @@ What I focused on, beyond the CRUD:
   bounded cache and a simple circuit breaker. When RAWG fails, the page shows a message and the rest of the app keeps
   working. RAWG receives only the search text. The API key lives in User Secrets and never shows up in logs, which a
   test checks.
-- **Real tests.** 180+ integration tests run against a real SQL Server through `WebApplicationFactory`. Playwright
+- **Real tests.** 200+ integration tests run against a real SQL Server through `WebApplicationFactory`. Playwright
   E2E tests cover desktop and mobile flows, and axe-core checks accessibility (WCAG 2.1 A/AA).
 - **Strict build.** Warnings are treated as errors, analyzers run at `latest-recommended`, package versions are
   centrally managed and locked, and CI checks that the migrations match the model.
@@ -79,8 +81,9 @@ What I focused on, beyond the CRUD:
 | Area | What you can do |
 |---|---|
 | Library | Cover-first cards, search by title, filter by status, platform, genre or favorite, 7 sort orders, pagination |
-| Games | Title, cover (8 built-in covers or an allow-listed https URL), description, platform, up to 5 genres, status, playtime, 1–10 rating, notes, start/finish/release dates, favorite |
+| Games | Title, cover (8 built-in covers or an allow-listed https URL), description, platform, up to 5 genres, status, playtime, 1–10 rating, notes, start/finish/release dates, estimated hours to beat, favorite. Warns before adding a title that is already in the library. |
 | RAWG search | Search [RAWG](https://rawg.io) by title, see cover, release date, platforms and genres, then pick a result to prefill the add form. Each user can add a RAWG game only once. |
+| What should I play? | Random pick from the backlog (not started, on hold and optionally wishlist), filtered by platform, genre and max estimated hours. "Pick another" skips the last pick, and "Start playing" marks the game as playing. |
 | Statistics | Total games and hours, average rating, completion rate, status breakdown, top platforms and genres, most played |
 | Account | Registration with email confirmation, password reset, display name, password change, sign out other sessions, JSON export, account deletion |
 | UX | Responsive layout with a sidebar on desktop and a bottom nav on mobile, keyboard accessible, `aria-invalid` form errors, reduced motion support |
@@ -151,6 +154,7 @@ erDiagram
         bool IsFavorite
         date ReleaseDate "nullable"
         int RawgId "nullable, unique per user"
+        int EstimatedHours "nullable, 1-1000"
     }
 ```
 
@@ -172,6 +176,7 @@ antiforgery token.
 | `/Library` | user | Search, filter, sort and paginate the user's games (`?q=&status=&platform=&genre=&fav=&sort=&size=&page=`) |
 | `/Library/New`, `/Library/{id}`, `/Library/{id}/Edit`, `/Library/{id}/Delete` | user (owner only) | Create, view, edit and delete a game |
 | `/Library/Search?q=` · `/Library/New?rawgId=` | user | Search RAWG, then prefill the add form from a result |
+| `/Suggest?platform=&genre=&maxHours=&wishlist=` | user | "What should I play?" suggestion. A POST with `handler=Start` marks the game as playing. |
 | `/Stats` | user | Statistics from the user's own data |
 | `/Account/Settings`, `/Account/Export`, `/Account/Delete` | user | Profile, password, sessions, JSON export, account deletion |
 | `/health` · `/health/live` | anonymous | Readiness check (database) and liveness check. They return only `Healthy` or `Unhealthy`. |

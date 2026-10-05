@@ -1,0 +1,108 @@
+@page "/Suggest"
+@model GameVault.Web.Pages.Suggest.IndexModel
+@{
+    ViewData["Title"] = "Ne oynasam?";
+    ViewData["Section"] = "suggest";
+    var f = Model.Filter;
+    var r = Model.Result;
+}
+<header class="page-header">
+    <div>
+        <h1>Ne oynasam?</h1>
+        <p class="muted">Henüz başlamadığın ya da ara verdiğin oyunlardan birini rastgele seçer.</p>
+    </div>
+</header>
+
+<form method="get" action="/Suggest" class="filters suggest-filters" aria-label="Öneri filtreleri">
+    <div class="filter-body">
+        <div class="field">
+            <label for="s-platform">Platform</label>
+            <select id="s-platform" name="platform">
+                <option value="">Tümü</option>
+                @foreach (var p in Model.Platforms)
+                {
+                    <option value="@p.Id" selected="@(f.PlatformId == p.Id)">@p.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label for="s-genre">Tür</label>
+            <select id="s-genre" name="genre">
+                <option value="">Tümü</option>
+                @foreach (var g in Model.Genres)
+                {
+                    <option value="@g.Id" selected="@(f.GenreId == g.Id)">@g.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label for="s-hours">En fazla süre (saat)</label>
+            <input id="s-hours" name="maxHours" type="number" min="1" max="@GameInput.MaxEstimatedHours" step="1" inputmode="numeric" value="@f.MaxHours" placeholder="Sınır yok">
+        </div>
+        <div class="field field-check filter-fav">
+            <input id="s-wishlist" name="wishlist" type="checkbox" value="true" checked="@f.IncludeWishlist">
+            <label for="s-wishlist">İstek listesini de dahil et</label>
+        </div>
+    </div>
+    <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">Öner</button>
+        @if (f.HasFilters)
+        {
+            <a class="btn btn-ghost" href="/Suggest">Temizle</a>
+        }
+    </div>
+</form>
+
+@if (r.BacklogCount == 0)
+{
+    <section class="empty-state" aria-labelledby="suggest-empty">
+        <partial name="_Icon" model="@("dice")" />
+        <h2 id="suggest-empty">Sırada bekleyen oyunun yok</h2>
+        <p>Durumu “Başlamadım” ya da “Ara verdim” olan oyunlar burada önerilir.</p>
+        <a class="btn btn-primary" href="/Library/New">Oyun ekle</a>
+    </section>
+}
+else if (r.Game is null)
+{
+    <section class="empty-state empty-state-compact" aria-labelledby="suggest-none" role="status">
+        <h2 id="suggest-none">Bu filtrelere uyan oyun yok</h2>
+        @if (r.UnknownEstimateCount > 0)
+        {
+            <p>@r.UnknownEstimateCount oyunun tahmini süresi girilmemiş; süre filtresinde hesaba katılmıyor. Süreyi oyunun düzenleme sayfasından ekleyebilirsin.</p>
+        }
+        <a class="btn btn-secondary" href="/Suggest">Filtreleri temizle</a>
+    </section>
+}
+else
+{
+    var game = r.Game;
+    <article class="suggestion panel" aria-labelledby="suggestion-title">
+        <partial name="_Cover" model="@((game.Title, game.CoverImageUrl, "cover-suggestion"))" />
+        <div class="suggestion-body">
+            <p class="suggestion-eyebrow" role="status">@r.MatchCount oyun arasından seçildi</p>
+            <h2 id="suggestion-title" class="suggestion-title"><a href="/Library/@game.Id">@game.Title</a></h2>
+            <div class="detail-badges">
+                <span class="badge status-@StatusLabels.Key(game.Status)">@StatusLabels.Label(game.Status)</span>
+                <span class="badge badge-neutral">@game.PlatformName</span>
+            </div>
+            <dl class="facts">
+                <div><dt>Tahmini süre</dt><dd>@(game.EstimatedHours is { } h ? $"~{Display.Number(h)} saat" : "Bilinmiyor")</dd></div>
+                <div><dt>Türler</dt><dd>@(game.Genres.Count > 0 ? string.Join(", ", game.Genres) : "Belirtilmedi")</dd></div>
+            </dl>
+            <div class="detail-actions">
+                <form method="post" asp-page-handler="Start" asp-route-id="@game.Id">
+                    <button type="submit" class="btn btn-primary"><partial name="_Icon" model="@("play")" /> Oynamaya başla</button>
+                </form>
+                @if (r.MatchCount > 1)
+                {
+                    <a class="btn btn-secondary" href="@Model.AnotherUrl(game.Id)"><partial name="_Icon" model="@("dice")" /> Başka öner</a>
+                }
+                <a class="btn btn-ghost" href="/Library/@game.Id">Ayrıntılar</a>
+            </div>
+            @if (r.UnknownEstimateCount > 0)
+            {
+                <p class="hint">@r.UnknownEstimateCount oyunun tahmini süresi girilmediği için süre filtresinde hesaba katılmadı.</p>
+            }
+        </div>
+    </article>
+}

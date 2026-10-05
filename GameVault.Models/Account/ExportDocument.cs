@@ -26,4 +26,5 @@ public sealed record ExportGame(
     DateTime DateAddedUtc,
     DateTime UpdatedAtUtc,
     DateOnly? ReleaseDate = null,
-    int? RawgId = null);
+    int? RawgId = null,
+    int? EstimatedHours = null);

@@ -10,7 +10,8 @@ public sealed record CatalogGame(
     string? CoverUrl,
     DateOnly? Released,
     IReadOnlyList<CatalogTag> Platforms,
-    IReadOnlyList<CatalogTag> Genres);
+    IReadOnlyList<CatalogTag> Genres,
+    int? EstimatedHours = null);
 
 /// <summary>Katalogdaki bir platform ya da tür: kararlı kısa ad (slug) ve görünen ad.</summary>
 public sealed record CatalogTag(string Slug, string Name);

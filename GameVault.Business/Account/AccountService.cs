@@ -42,6 +42,7 @@ public sealed class AccountService(GameVaultDbContext db, UserManager<Applicatio
                 g.DateAdded,
                 g.UpdatedAtUtc,
                 g.ReleaseDate,
+                g.EstimatedHours,
                 g.RawgId
             })
             .ToListAsync(ct);
@@ -53,7 +54,7 @@ public sealed class AccountService(GameVaultDbContext db, UserManager<Applicatio
             games.Select(g => new ExportGame(
                 g.Id, g.Title, g.Description, g.CoverImageUrl, g.Platform, g.Genres,
                 StatusLabels.Key(g.Status), g.Rating, g.PlaytimeHours, g.IsFavorite, g.Notes,
-                g.StartDate, g.CompletionDate, g.DateAdded, g.UpdatedAtUtc, g.ReleaseDate, g.RawgId)).ToList());
+                g.StartDate, g.CompletionDate, g.DateAdded, g.UpdatedAtUtc, g.ReleaseDate, g.RawgId, g.EstimatedHours)).ToList());
     }
 
     /// <summary>Kullanıcının tüm sunucu oturumlarını siler (isteğe bağlı olarak biri hariç).</summary>

@@ -203,6 +203,7 @@ public static class ServiceRegistration
         services.AddScoped<LibraryService>();
         services.AddScoped<ReferenceDataService>();
         services.AddScoped<StatsService>();
+        services.AddScoped<SuggestionService>();
         services.AddScoped<AccountService>();
         services.AddScoped<DbRateLimiter>();
         services.AddScoped<DemoDataSeeder>();
