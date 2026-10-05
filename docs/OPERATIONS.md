@@ -46,6 +46,9 @@ Birden fazla instance çalıştırılabilir: oturumlar, Data Protection anahtarl
 | `AllowedHosts` | önerilir | Ör. `gamevault.example.com`. Host başlığı filtrelemesi. |
 | `ReverseProxy__KnownProxies__0` | proxy varsa | Proxy'nin IP adresi. Tanımlanmazsa `X-Forwarded-*` yok sayılır; bu durumda IP tabanlı oran sınırı proxy IP'sine uygulanır. |
 | `ReverseProxy__KnownNetworks__0` | alternatif | Ör. `10.0.0.0/8`. |
+| `Rawg__ApiKey` | hayır | RAWG API anahtarı; sır olarak verin. Boşsa RAWG araması kapalıdır. Tanımlıysa `media.rawg.io` kapak izin listesine ve CSP'ye otomatik eklenir. |
+| `Rawg__BaseUrl`, `Rawg__TimeoutSeconds`, `Rawg__FailureCooldownSeconds` | hayır | Varsayılanlar `https://api.rawg.io/api/`, 5 sn, 30 sn. Adres https olmalı ve `/` ile bitmeli. |
+| `RateLimiting__CatalogPerUser__*` | hayır | Kullanıcı başına RAWG arama sınırı (varsayılan 15 dakikada 60). |
 | `Covers__AllowedHosts__0` | hayır | Harici kapak görselleri için izinli alan adı. Boşsa yalnızca hazır kapaklar kullanılır. |
 | `Security__UseHttpsRedirection` | hayır | Varsayılan `true`. Yalnızca TLS'i proxy zorunlu kılıyorsa kapatın. |
 | `Security__EnableHsts` | hayır | Varsayılan `true`. HSTS yalnızca Production ortamında ve HTTPS isteklerinde gönderilir. |

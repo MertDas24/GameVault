@@ -152,6 +152,12 @@ namespace GameVault.DataAccess.Migrations
                     b.Property<int?>("Rating")
                         .HasColumnType("int");
 
+                    b.Property<int?>("RawgId")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly?>("ReleaseDate")
+                        .HasColumnType("date");
+
                     b.Property<DateOnly?>("StartDate")
                         .HasColumnType("date");
 
@@ -177,6 +183,10 @@ namespace GameVault.DataAccess.Migrations
 
                     b.HasIndex("UserId", "IsFavorite");
 
+                    b.HasIndex("UserId", "RawgId")
+                        .IsUnique()
+                        .HasFilter("[RawgId] IS NOT NULL");
+
                     b.HasIndex("UserId", "Status");
 
                     b.HasIndex("UserId", "Title");
@@ -186,6 +196,8 @@ namespace GameVault.DataAccess.Migrations
                             t.HasCheckConstraint("CK_LibraryGames_PlaytimeHours", "[PlaytimeHours] >= 0 AND [PlaytimeHours] <= 100000");
 
                             t.HasCheckConstraint("CK_LibraryGames_Rating", "[Rating] IS NULL OR ([Rating] >= 1 AND [Rating] <= 10)");
+
+                            t.HasCheckConstraint("CK_LibraryGames_RawgId", "[RawgId] IS NULL OR [RawgId] > 0");
 
                             t.HasCheckConstraint("CK_LibraryGames_Status", "[Status] >= 0 AND [Status] <= 5");
                         });

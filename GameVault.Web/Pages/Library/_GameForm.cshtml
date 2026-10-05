@@ -86,6 +86,14 @@
             </div>
         </div>
 
+        <div class="field-row">
+            <div class="field">
+                <label asp-for="Input.ReleaseDate">Çıkış tarihi</label>
+                <input asp-for="Input.ReleaseDate" type="date" min="1950-01-01">
+                <span asp-validation-for="Input.ReleaseDate" id="Input_ReleaseDate-error" class="field-error"></span>
+            </div>
+        </div>
+
         <div class="field">
             <label asp-for="Input.Description">Açıklama</label>
             <textarea asp-for="Input.Description" rows="4" maxlength="4000"></textarea>

@@ -12,6 +12,15 @@ regex = '''["']\s*([A-Za-z0-9+/]{43,}\s*={0,2})\s*["']'''
 secretGroup = 1
 entropy = 4.6
 
+# RAWG API anahtarları 32 karakterlik onaltılık dizelerdir; yakınında "rawg" geçen bir atamayı yakalar.
+# Anahtar yalnızca User Secrets ya da ortam değişkeninde (Rawg__ApiKey) tutulmalıdır.
+[[rules]]
+id = "rawg-api-key"
+description = "RAWG API anahtarı"
+regex = '''(?i)rawg[\w:.-]{0,30}["'\s:=]{1,5}([a-f0-9]{32})\b'''
+secretGroup = 1
+keywords = ["rawg"]
+
 [allowlist]
 description = "Üretilmiş ya da üçüncü taraf dosyalar"
 paths = [

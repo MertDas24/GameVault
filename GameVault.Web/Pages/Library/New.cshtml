@@ -9,7 +9,30 @@
     <h1>Oyun ekle</h1>
 </header>
 
+@if (Model.CatalogMessage is not null)
+{
+    <div class="alert alert-error" role="alert">@Model.CatalogMessage</div>
+}
+
+@if (Model.FromCatalog is { } fromCatalog)
+{
+    <div class="alert alert-success catalog-callout" role="status">
+        <p>Bilgiler <a href="https://rawg.io/games/@fromCatalog.RawgId" rel="noopener noreferrer" target="_blank">RAWG</a>'dan dolduruldu. Kaydetmeden önce kontrol edebilir ve değiştirebilirsin.</p>
+    </div>
+}
+else if (Model.CatalogEnabled && Model.Input.RawgId is null)
+{
+    <div class="panel catalog-callout">
+        <p class="muted">Bilgileri elle girmek yerine oyunu RAWG'da arayabilirsin.</p>
+        <a class="btn btn-secondary" href="/Library/Search"><partial name="_Icon" model="@("search")" /> RAWG'da ara</a>
+    </div>
+}
+
 <form method="post" class="form panel" data-busy-form novalidate>
+    @if (Model.Input.RawgId is { } rawgId)
+    {
+        <input type="hidden" name="Input.RawgId" value="@rawgId">
+    }
     <partial name="_GameForm" model="Model" />
     <div class="form-actions">
         <a class="btn btn-ghost" href="/Library">Vazgeç</a>

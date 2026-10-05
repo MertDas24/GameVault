@@ -65,7 +65,11 @@ What I focused on, beyond the CRUD:
   Redis needed.
 - **Reliable email.** Confirmation and password-reset mails go through a database outbox and are retried with
   backoff.
-- **Real tests.** 140+ integration tests run against a real SQL Server through `WebApplicationFactory`. Playwright
+- **Resilient external API.** The RAWG game database is called through `IHttpClientFactory` with a timeout, a
+  bounded cache and a simple circuit breaker. When RAWG fails, the page shows a message and the rest of the app keeps
+  working. RAWG receives only the search text. The API key lives in User Secrets and never shows up in logs, which a
+  test checks.
+- **Real tests.** 180+ integration tests run against a real SQL Server through `WebApplicationFactory`. Playwright
   E2E tests cover desktop and mobile flows, and axe-core checks accessibility (WCAG 2.1 A/AA).
 - **Strict build.** Warnings are treated as errors, analyzers run at `latest-recommended`, package versions are
   centrally managed and locked, and CI checks that the migrations match the model.
@@ -75,7 +79,8 @@ What I focused on, beyond the CRUD:
 | Area | What you can do |
 |---|---|
 | Library | Cover-first cards, search by title, filter by status, platform, genre or favorite, 7 sort orders, pagination |
-| Games | Title, cover (8 built-in covers or an allow-listed https URL), description, platform, up to 5 genres, status, playtime, 1–10 rating, notes, start/finish dates, favorite |
+| Games | Title, cover (8 built-in covers or an allow-listed https URL), description, platform, up to 5 genres, status, playtime, 1–10 rating, notes, start/finish/release dates, favorite |
+| RAWG search | Search [RAWG](https://rawg.io) by title, see cover, release date, platforms and genres, then pick a result to prefill the add form. Each user can add a RAWG game only once. |
 | Statistics | Total games and hours, average rating, completion rate, status breakdown, top platforms and genres, most played |
 | Account | Registration with email confirmation, password reset, display name, password change, sign out other sessions, JSON export, account deletion |
 | UX | Responsive layout with a sidebar on desktop and a bottom nav on mobile, keyboard accessible, `aria-invalid` form errors, reduced motion support |
@@ -90,6 +95,7 @@ Statuses: Not started · Playing · Completed · On hold · Dropped · Wishlist.
 | Data | SQL Server, Entity Framework Core 10, versioned migrations |
 | Auth | ASP.NET Core Identity with cookie authentication and server-side session storage |
 | Email | MailKit (SMTP), Mailpit for local development |
+| External API | RAWG Video Games Database via `IHttpClientFactory` (optional) |
 | Tests | xUnit v3, WebApplicationFactory, AngleSharp, Playwright (Chromium), axe-core |
 | Tooling | Docker, Docker Compose, GitHub Actions, CodeQL, Dependabot, gitleaks |
 | Styling | Hand-written, token-based CSS. There is no frontend build step. |
@@ -113,13 +119,14 @@ flowchart LR
 
     D --> SQL[("SQL Server")]
     BL -- "background worker" --> SMTP["SMTP<br/>(Mailpit locally)"]
+    BL -- "IHttpClientFactory<br/>timeout + cache" --> RAWG["RAWG API<br/>(optional)"]
 ```
 
 ```
 GameVault.Entities    → EF Core entities (users, library games, genres, platforms, sessions…)
 GameVault.DataAccess  → DbContext and migrations
-GameVault.Models      → Input models with validation, query normalization, DTOs
-GameVault.Business    → Library, statistics, account, rate limiting and email services
+GameVault.Models      → Input models with validation, query normalization, provider-neutral DTOs
+GameVault.Business    → Library, statistics, account, rate limiting, email and game catalog (RAWG) services
 GameVault.Web         → Razor Pages UI, authentication, security headers, startup validation
 tests/GameVault.Tests → Unit and integration tests (real SQL Server)
 tests/GameVault.E2E   → Playwright browser tests
@@ -142,11 +149,14 @@ erDiagram
         int PlaytimeHours
         int Rating "1-10, nullable"
         bool IsFavorite
+        date ReleaseDate "nullable"
+        int RawgId "nullable, unique per user"
     }
 ```
 
 Deleting a user cascades to their games and sessions. Every library query filters by `UserId`, and the composite
-indexes start with `UserId`, so data isolation and query speed rely on the same column.
+indexes start with `UserId`, so data isolation and query speed rely on the same column. A filtered unique index on
+`(UserId, RawgId)` stops the same RAWG game from being added twice, even when two requests race.
 
 Design decisions and their reasons are listed in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -161,6 +171,7 @@ antiforgery token.
 | `/Account/Register`, `/Account/Login`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Account/ConfirmEmail` | anonymous | Sign-up and sign-in flows |
 | `/Library` | user | Search, filter, sort and paginate the user's games (`?q=&status=&platform=&genre=&fav=&sort=&size=&page=`) |
 | `/Library/New`, `/Library/{id}`, `/Library/{id}/Edit`, `/Library/{id}/Delete` | user (owner only) | Create, view, edit and delete a game |
+| `/Library/Search?q=` · `/Library/New?rawgId=` | user | Search RAWG, then prefill the add form from a result |
 | `/Stats` | user | Statistics from the user's own data |
 | `/Account/Settings`, `/Account/Export`, `/Account/Delete` | user | Profile, password, sessions, JSON export, account deletion |
 | `/health` · `/health/live` | anonymous | Readiness check (database) and liveness check. They return only `Healthy` or `Unhealthy`. |
@@ -193,6 +204,13 @@ dotnet run --project GameVault.Web -- seed-demo
 
 This creates `demo@gamevault.test` with 9 fictional games.
 
+**Optional RAWG search:** get a free key at https://rawg.io/apidocs and store it in User Secrets. The key stays
+outside the repository, and you should never put it in `appsettings*.json`.
+
+```powershell
+dotnet user-secrets set "Rawg:ApiKey" "<your key>" --project GameVault.Web
+```
+
 ### Option B: Docker Compose (SQL Server, Mailpit and the app)
 
 ```bash
@@ -216,6 +234,8 @@ secrets. Override them with `dotnet user-secrets` or environment variables (`:` 
 | `Email__FromAddress` | `no-reply@gamevault.test` | Sender address |
 | `Covers__AllowedHosts__0` | none | Extra host allowed for external cover URLs |
 | `Seed__DemoPassword` | none | Password for the optional demo account (user-secrets only) |
+| `Rawg__ApiKey` | none | RAWG API key (user-secrets only). Without it, RAWG search is hidden and everything else works. |
+| `Rawg__TimeoutSeconds` | `5` | Timeout for a single RAWG request |
 | `GAMEVAULT_TEST_SQLSERVER` | LocalDB | SQL Server used by the integration tests (no database name) |
 
 The app validates its configuration at startup and refuses to start with a list of the invalid keys (never their

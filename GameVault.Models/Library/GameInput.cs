@@ -11,10 +11,12 @@ namespace GameVault.Models.Library;
 public sealed class GameInput
 {
     public const int MaxGenres = 5;
+    public const int TitleMaxLength = 200;
+    public const int CoverUrlMaxLength = 500;
 
     [Display(Name = "Oyun adı")]
     [Required(ErrorMessage = "Oyun adı zorunludur.")]
-    [StringLength(200, ErrorMessage = "Oyun adı en fazla {1} karakter olabilir.")]
+    [StringLength(TitleMaxLength, ErrorMessage = "Oyun adı en fazla {1} karakter olabilir.")]
     public string Title { get; set; } = string.Empty;
 
     [Display(Name = "Açıklama")]
@@ -27,7 +29,7 @@ public sealed class GameInput
     public string CoverChoice { get; set; } = CoverChoices.None;
 
     [Display(Name = "Kapak görseli adresi")]
-    [StringLength(500, ErrorMessage = "Adres en fazla {1} karakter olabilir.")]
+    [StringLength(CoverUrlMaxLength, ErrorMessage = "Adres en fazla {1} karakter olabilir.")]
     public string? CoverUrl { get; set; }
 
     [Display(Name = "Platform")]
@@ -63,6 +65,16 @@ public sealed class GameInput
 
     [Display(Name = "Bitirme tarihi")]
     public DateOnly? CompletionDate { get; set; }
+
+    [Display(Name = "Çıkış tarihi")]
+    public DateOnly? ReleaseDate { get; set; }
+
+    /// <summary>
+    /// RAWG aramasından seçildiyse RAWG kimliği. Yalnızca yeni oyun oluştururken dikkate alınır;
+    /// güncellemede yok sayılır.
+    /// </summary>
+    [Range(1, int.MaxValue, ErrorMessage = "Geçersiz RAWG kimliği.")]
+    public int? RawgId { get; set; }
 }
 
 public static class CoverChoices

@@ -38,6 +38,7 @@ public sealed class RateLimitOptions
     public RateLimitRule ConfirmationPerAccount { get; set; } = new(3, TimeSpan.FromHours(1));
     public RateLimitRule SensitivePerUser { get; set; } = new(10, TimeSpan.FromMinutes(15));
     public RateLimitRule ExportPerUser { get; set; } = new(10, TimeSpan.FromHours(1));
+    public RateLimitRule CatalogPerUser { get; set; } = new(60, TimeSpan.FromMinutes(15));
 }
 
 /// <summary>

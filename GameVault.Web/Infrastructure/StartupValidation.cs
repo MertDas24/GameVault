@@ -1,4 +1,5 @@
 using System.Net;
+using GameVault.Business.Catalog;
 using GameVault.Business.Covers;
 using GameVault.Business.Email;
 
@@ -127,6 +128,15 @@ public static class StartupValidation
             {
                 errors.Add($"Covers:AllowedHosts geçersiz alan adı içeriyor: '{host}'.");
             }
+        }
+
+        // Anahtar isteğe bağlıdır (yoksa entegrasyon kapalı). Adres ise anahtarın gideceği yer olduğundan https olmalı.
+        var rawg = config.GetSection(RawgOptions.SectionName).Get<RawgOptions>() ?? new RawgOptions();
+        if (!Uri.TryCreate(rawg.BaseUrl, UriKind.Absolute, out var rawgUri)
+            || rawgUri.Scheme != Uri.UriSchemeHttps
+            || !rawg.BaseUrl.EndsWith('/'))
+        {
+            errors.Add("Rawg:BaseUrl '/' ile biten mutlak bir https adresi olmalı.");
         }
 
         var proxy = config.GetSection(ReverseProxyOptions.SectionName).Get<ReverseProxyOptions>() ?? new ReverseProxyOptions();

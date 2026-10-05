@@ -1,0 +1,89 @@
+@page "/Library/Search"
+@model GameVault.Web.Pages.Library.SearchModel
+@{
+    ViewData["Title"] = "RAWG'da ara";
+    ViewData["Section"] = "new";
+    var result = Model.Result;
+}
+<a class="back-link" href="/Library/New"><partial name="_Icon" model="@("back")" /> Oyun ekle</a>
+<header class="page-header">
+    <div>
+        <h1>RAWG'da ara</h1>
+        <p class="muted">Oyunu bul, seç; ad, kapak, çıkış tarihi, platform ve türler formu otomatik doldursun.</p>
+    </div>
+</header>
+
+@if (!Model.Enabled)
+{
+    <section class="panel narrow">
+        <p>RAWG entegrasyonu bu kurulumda kapalı. Oyunlarını <a href="/Library/New">elle ekleyebilirsin</a>.</p>
+    </section>
+}
+else
+{
+    <form method="get" action="/Library/Search" class="filters catalog-search" role="search" aria-label="RAWG'da oyun ara">
+        <div class="field filter-search">
+            <label for="catalog-q">Oyun adı</label>
+            <div class="input-icon">
+                <partial name="_Icon" model="@("search")" />
+                <input id="catalog-q" name="q" type="search" value="@Model.Query" required
+                       minlength="@GameCatalog.MinQueryLength" maxlength="@GameCatalog.MaxQueryLength"
+                       placeholder="ör. Hollow Knight" autocomplete="off">
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">Ara</button>
+        </div>
+    </form>
+
+    @if (Model.Message is not null)
+    {
+        <div class="alert alert-error" role="alert">@Model.Message</div>
+    }
+    else if (result?.Status == CatalogStatus.Unavailable)
+    {
+        <div class="alert alert-error" role="alert">
+            RAWG'a şu an ulaşılamıyor. Biraz sonra yeniden dene ya da oyunu <a href="/Library/New">elle ekle</a>.
+        </div>
+    }
+    else if (result is not null && result.Games.Count == 0)
+    {
+        <p class="result-count" role="status">“@Model.Query” için sonuç bulunamadı. Oyunu <a href="/Library/New">elle ekleyebilirsin</a>.</p>
+    }
+    else if (result is not null)
+    {
+        <p class="result-count" role="status">“@Model.Query” için @result.Games.Count sonuç</p>
+        <ul class="catalog-results">
+            @foreach (var game in result.Games)
+            {
+                <li class="catalog-item">
+                    <partial name="_Cover" model="@((game.Name, game.CoverUrl, "cover-catalog"))" />
+                    <div class="catalog-body">
+                        <h2 class="catalog-title">@game.Name</h2>
+                        <p class="catalog-date">@(game.Released is { } released ? Display.Date(released) : "Çıkış tarihi bilinmiyor")</p>
+                        @if (game.Platforms.Count > 0)
+                        {
+                            <p class="catalog-tags"><span class="visually-hidden">Platformlar: </span>@string.Join(" · ", game.Platforms.Select(p => p.Name))</p>
+                        }
+                        @if (game.Genres.Count > 0)
+                        {
+                            <p class="catalog-tags"><span class="visually-hidden">Türler: </span>@string.Join(" · ", game.Genres.Select(g => g.Name))</p>
+                        }
+                    </div>
+                    <div class="catalog-action">
+                        @if (Model.Owned.TryGetValue(game.RawgId, out var ownedId))
+                        {
+                            <a class="btn btn-ghost" href="/Library/@ownedId">Kütüphanende</a>
+                        }
+                        else
+                        {
+                            <a class="btn btn-secondary" href="/Library/New?rawgId=@game.RawgId" aria-label="Seç: @game.Name">Seç</a>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+
+    <p class="hint attribution">Oyun verileri <a href="https://rawg.io" rel="noopener noreferrer" target="_blank">RAWG</a> tarafından sağlanır.</p>
+}

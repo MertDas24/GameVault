@@ -28,6 +28,10 @@
             <div><dt>Kişisel puan</dt><dd>@(g.Rating is { } r ? $"{r} / 10" : "Puanlanmadı")</dd></div>
             <div><dt>Oynama süresi</dt><dd>@Display.Number(g.PlaytimeHours) saat</dd></div>
             <div><dt>Türler</dt><dd>@(g.Genres.Count > 0 ? string.Join(", ", g.Genres.Select(x => x.Name)) : "Belirtilmedi")</dd></div>
+            @if (g.ReleaseDate is { } released)
+            {
+                <div><dt>Çıkış tarihi</dt><dd>@Display.Date(released)</dd></div>
+            }
             <div><dt>Eklenme</dt><dd>@Fmt.Date(g.DateAdded)</dd></div>
             @if (g.StartDate is { } start)
             {
@@ -54,6 +58,11 @@
                 <h2 id="notes-heading" class="section-title">Notlarım</h2>
                 <p class="prose">@g.Notes</p>
             </section>
+        }
+
+        @if (g.RawgId is { } rawgId)
+        {
+            <p class="hint"><a href="https://rawg.io/games/@rawgId" rel="noopener noreferrer" target="_blank">RAWG'da görüntüle</a></p>
         }
 
         <div class="detail-actions">

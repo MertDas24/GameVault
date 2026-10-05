@@ -288,6 +288,72 @@ Bu aşamada yapılanlar:
 > **Cevap:** Sanal makine kendi işletim sistemi çekirdeğini çalıştırır. Konteyner ise ana makinenin çekirdeğini
 > paylaşır ve yalnızca süreçleri izole eder. Bu yüzden konteyner daha hafiftir ve saniyeler içinde başlar.
 
+### Aşama 6: RAWG entegrasyonu (harici API)
+Kullanıcı oyunu isimle arar, bir sonucu seçer, "Oyun ekle" formu dolar, kontrol edip kaydeder.
+
+**Katmanlara dağılım:**
+
+| Katman | Dosya | Görevi |
+|---|---|---|
+| Models | [CatalogDtos.cs](../GameVault.Models/Catalog/CatalogDtos.cs) | `CatalogGame`: RAWG'dan bağımsız model. Sayfalar yalnızca bunu görür. |
+| Business | [RawgModels.cs](../GameVault.Business/Catalog/RawgModels.cs) | RAWG'ın JSON biçimi. `internal`, katman dışına çıkmaz. |
+| Business | [RawgMapping.cs](../GameVault.Business/Catalog/RawgMapping.cs) | Güvenilmeyen veriyi temizler; RAWG platform ve türlerini GameVault listelerine eşler. |
+| Business | [GameCatalog.cs](../GameVault.Business/Catalog/GameCatalog.cs) | HTTP çağrısı, timeout, önbellek, devre kesici |
+| Entities/DataAccess | `LibraryGame.RawgId`, `ReleaseDate` + migration | Kalıcı veri, tekrar eklemeyi engelleyen indeks |
+| Web | [Search.cshtml](../GameVault.Web/Pages/Library/Search.cshtml), [New.cshtml.cs](../GameVault.Web/Pages/Library/New.cshtml.cs) | Arama ekranı, formun doldurulması |
+
+> **Neden DTO ayrı?** RAWG yarın JSON biçimini değiştirirse ya da IGDB'ye geçilirse yalnızca `RawgModels` ve
+> `RawgMapping` değişir. Sayfalar ve veritabanı etkilenmez. Buna **Anti-Corruption Layer** denir: dış sistemin
+> modeli kendi modeline sızmaz.
+
+**Kavramlar:**
+- **`IHttpClientFactory`:** Her istekte `new HttpClient()` yazmak bağlantı (socket) tüketir; tek bir statik
+  `HttpClient` ise DNS değişikliklerini kaçırır. Fabrika ikisini de çözer. Adlandırılmış istemci (`"rawg"`) temel
+  adresi, timeout'u ve başlıkları tek yerde tanımlar.
+- **Singleton ve HttpClient:** `GameCatalog` singleton'dır (önbelleği tutar). `HttpClient`'ı constructor'da alıp
+  saklamaz; her çağrıda fabrikadan ister. Bu, 9. bölümdeki "captive dependency" tuzağının bir başka örneği.
+- **Timeout:** İstek 5 saniyede bitmezse iptal edilir. `CancellationTokenSource.CreateLinkedTokenSource`, hem kullanıcı
+  sayfayı kapatırsa hem de süre dolarsa isteği durdurur. İki durum ayrı ele alınır: kullanıcı iptali bir hata
+  değildir.
+- **Devre kesici (circuit breaker):** RAWG hata verirse 30 saniye boyunca yeniden denenmez. Çökmüş bir servise her
+  kullanıcı isteğinde 5 saniye beklemek, hem kullanıcıyı hem de RAWG'ı yorar. Anahtar reddedilirse (401) bekleme
+  süresi daha uzundur.
+- **Önbellek:** Aramalar 1 saat, oyun bilgileri 24 saat saklanır. Arama yapıldığında her sonuç ayrıca oyun kimliğiyle
+  önbelleğe girer, böylece "Seç" butonu RAWG'a yeni istek atmaz. Önbelleğin boyutu sınırlıdır (`SizeLimit`), bu
+  sayede binlerce farklı arama belleği şişiremez.
+- **Güvenilmeyen veri:** RAWG'dan gelen ad kırpılır, görsel adresi yalnızca `https://media.rawg.io` ise kabul edilir,
+  tarih sıkı biçimde ayrıştırılır. Bir testte betik içeren sahte bir oyun adı kullanılıyor; Razor bunu kodluyor.
+- **Tekrar ekleme iki katmanda engellenir:** Servis önce kontrol eder ve kullanıcıya düzgün bir mesaj gösterir.
+  Aynı anda gelen iki istek bu kontrolü birlikte geçebilir (*race condition*); o durumda veritabanındaki benzersiz
+  indeks ikinciyi reddeder. Filtreli indeks (`WHERE RawgId IS NOT NULL`) sayesinde elle eklenen oyunlar bu kurala
+  takılmaz.
+
+**API anahtarının güvenliği:**
+- Anahtar kodda ya da `appsettings` dosyalarında yok. Yerelde **User Secrets**'ta durur. User Secrets dosyası proje
+  klasörünün dışında, `%APPDATA%\Microsoft\UserSecrets\` altındadır; bu yüzden Git'e hiç girmez.
+- RAWG anahtarı URL'de taşır (`?key=...`). .NET, HttpClient loglarında query kısmını zaten `?*` olarak maskeliyor.
+  Bu projede ikinci bir önlem olarak RAWG istemcisinin istek logları tamamen kapatıldı (`RemoveAllLoggers`). Bir test
+  anahtarın loglarda ve sayfalarda geçmediğini doğrular.
+- **Mutasyon kontrolünden çıkan ders:** İlk yazılan test `RemoveAllLoggers` satırı silindiğinde de geçiyordu, çünkü
+  .NET'in maskelemesi zaten koruyordu. Test, bizim eklediğimiz katmanı hiç denetlemiyordu. Teste "RAWG istemcisi hiç
+  log yazmıyor" kontrolü eklenince satır silindiğinde kırılır hâle geldi.
+- gitleaks'e RAWG anahtarı için özel bir kural eklendi. Anahtar yanlışlıkla bir dosyaya yazılıp commit edilirse CI
+  kırılır.
+
+**Veri gizliliği:** RAWG'a yalnızca arama metni ve anahtar gider. Bir test, giden isteğin query'sinde tam olarak
+`search`, `page_size` ve `key` olduğunu, çerez ya da e-posta bulunmadığını kontrol eder. Kapak görsellerini tarayıcı
+doğrudan RAWG'dan yüklediği için RAWG kullanıcının IP adresini görebilir. Bu durum Gizlilik sayfasında açıkça yazıyor.
+
+> **Mülakat sorusu:** "Harici bir API çökerse uygulaman ne yapar?"
+> **Cevap:** Hiçbir şey çökmez. Timeout isteği 5 saniyede keser, hata yakalanır ve kullanıcıya "şu an ulaşılamıyor,
+> elle ekleyebilirsin" mesajı gösterilir. Devre kesici 30 saniye boyunca yeni istek atmaz. Kütüphane, istatistikler
+> ve elle ekleme RAWG'dan tamamen bağımsızdır; bunu testler doğrular.
+
+> **Mülakat sorusu:** "Neden Polly ya da `AddStandardResilienceHandler` kullanmadın?"
+> **Cevap:** Bu ölçekte timeout ve basit bir devre kesici yeterliydi; ek bir paket bağımlılığı getirmek istemedim.
+> Arama etkileşimli bir işlem olduğu için yeniden deneme (retry) bilerek yok: kullanıcıyı 3 deneme boyunca
+> bekletmek yerine hemen mesaj göstermek daha iyi. Trafik artarsa Microsoft.Extensions.Http.Resilience'a geçilebilir.
+
 ---
 
 ## Kendi notlarım

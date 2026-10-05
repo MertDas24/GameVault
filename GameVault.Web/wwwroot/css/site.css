@@ -396,6 +396,26 @@ input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; accent-
 .detail-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
 .detail-actions form { margin: 0; }
 
+/* ---------- RAWG araması ---------- */
+.catalog-results { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
+.catalog-item {
+    display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 1rem; align-items: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem;
+}
+.cover-catalog { aspect-ratio: 3 / 2; border-radius: calc(var(--radius) - 4px); }
+.cover-catalog .cover-fallback span { font-size: 1.4rem; }
+.catalog-body { min-width: 0; display: grid; gap: .2rem; }
+.catalog-title { font-size: 1.05rem; margin: 0; overflow-wrap: anywhere; }
+.catalog-date, .catalog-tags { margin: 0; color: var(--text-muted); font-size: .88rem; overflow-wrap: anywhere; }
+.attribution { margin-top: 1.5rem; }
+.catalog-callout { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }
+.catalog-callout p { margin: 0; }
+@media (max-width: 600px) {
+    .catalog-item { grid-template-columns: 96px minmax(0, 1fr); }
+    .catalog-action { grid-column: 1 / -1; }
+    .catalog-action .btn { width: 100%; }
+}
+
 /* ---------- Boş durum, sayfalama ---------- */
 .empty-state {
     text-align: center; padding: clamp(2rem, 6vw, 4rem) 1rem;

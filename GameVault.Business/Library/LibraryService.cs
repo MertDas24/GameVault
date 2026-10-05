@@ -114,7 +114,9 @@ public sealed class LibraryService(
                 g.StartDate,
                 g.CompletionDate,
                 g.DateAdded,
-                g.UpdatedAtUtc
+                g.UpdatedAtUtc,
+                g.ReleaseDate,
+                g.RawgId
             })
             .FirstOrDefaultAsync(ct);
 
@@ -123,7 +125,7 @@ public sealed class LibraryService(
             : new GameDetails(
                 game.Id, game.Title, game.Description, game.CoverImageUrl, game.PlatformId, game.PlatformName,
                 game.Genres, game.Status, game.Rating, game.PlaytimeHours, game.IsFavorite, game.Notes,
-                game.StartDate, game.CompletionDate, game.DateAdded, game.UpdatedAtUtc);
+                game.StartDate, game.CompletionDate, game.DateAdded, game.UpdatedAtUtc, game.ReleaseDate, game.RawgId);
     }
 
     public async Task<GameInput?> GetInputAsync(Guid userId, Guid id, CancellationToken ct = default)
@@ -149,8 +151,23 @@ public sealed class LibraryService(
             Notes = details.Notes,
             IsFavorite = details.IsFavorite,
             StartDate = details.StartDate,
-            CompletionDate = details.CompletionDate
+            CompletionDate = details.CompletionDate,
+            ReleaseDate = details.ReleaseDate
         };
+    }
+
+    /// <summary>Verilen RAWG kimliklerinden hangilerinin kullanıcının kütüphanesinde olduğunu döner (RAWG kimliği → oyun kimliği).</summary>
+    public async Task<IReadOnlyDictionary<int, Guid>> GetOwnedRawgIdsAsync(Guid userId, IReadOnlyCollection<int> rawgIds, CancellationToken ct = default)
+    {
+        if (rawgIds.Count == 0)
+        {
+            return new Dictionary<int, Guid>();
+        }
+
+        return await OwnedBy(userId)
+            .AsNoTracking()
+            .Where(g => g.RawgId != null && rawgIds.Contains(g.RawgId.Value))
+            .ToDictionaryAsync(g => g.RawgId!.Value, g => g.Id, ct);
     }
 
     public async Task<OperationResult<Guid>> CreateAsync(Guid userId, GameInput input, CancellationToken ct = default)
@@ -167,19 +184,40 @@ public sealed class LibraryService(
             return OperationResult<Guid>.Invalid(validated.Errors);
         }
 
+        if (input.RawgId is { } rawgId && await OwnedBy(userId).AnyAsync(g => g.RawgId == rawgId, ct))
+        {
+            return OperationResult<Guid>.Invalid(string.Empty, DuplicateRawgGameError);
+        }
+
         var now = time.GetUtcNow().UtcDateTime;
         var game = new LibraryGame
         {
             Id = Guid.NewGuid(),
             UserId = userId,
-            DateAdded = now
+            DateAdded = now,
+            // RAWG kimliği yalnızca oluştururken atanır; Apply (güncelleme) onu değiştirmez.
+            RawgId = input.RawgId
         };
         Apply(game, input, validated, now);
 
         db.LibraryGames.Add(game);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (input.RawgId is not null && IsUniqueViolation(ex))
+        {
+            // Aynı anda gelen iki istekte yukarıdaki kontrol ikisini de geçirebilir; indeks ikincisini durdurur.
+            return OperationResult<Guid>.Invalid(string.Empty, DuplicateRawgGameError);
+        }
+
         return OperationResult<Guid>.Success(game.Id);
     }
+
+    public const string DuplicateRawgGameError = "Bu oyun zaten kütüphanende.";
+
+    private static bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2601 or 2627 };
 
     public async Task<OperationResult<Guid>> UpdateAsync(Guid userId, Guid id, GameInput input, CancellationToken ct = default)
     {
@@ -235,6 +273,7 @@ public sealed class LibraryService(
         game.IsFavorite = input.IsFavorite;
         game.StartDate = input.StartDate;
         game.CompletionDate = input.CompletionDate;
+        game.ReleaseDate = input.ReleaseDate;
         game.UpdatedAtUtc = now;
 
         game.Genres.Clear();
@@ -300,6 +339,12 @@ public sealed class LibraryService(
         if (input.CompletionDate is { } end && (end < earliest || end > today.AddDays(1)))
         {
             errors.TryAdd(nameof(GameInput.CompletionDate), "Bitirme tarihi 1970 ile bugün arasında olmalı.");
+        }
+
+        // Çıkış tarihi gelecekte olabilir (henüz çıkmamış oyunlar), ama makul bir aralıkta.
+        if (input.ReleaseDate is { } released && (released < new DateOnly(1950, 1, 1) || released > today.AddYears(10)))
+        {
+            errors.TryAdd(nameof(GameInput.ReleaseDate), "Çıkış tarihi 1950 ile önümüzdeki 10 yıl arasında olmalı.");
         }
 
         if (input.StartDate is { } s && input.CompletionDate is { } c && c < s)

@@ -29,6 +29,15 @@ public class LibraryGame
     public DateOnly? StartDate { get; set; }
     public DateOnly? CompletionDate { get; set; }
 
+    /// <summary>Oyunun çıkış tarihi (isteğe bağlı; RAWG'dan doldurulabilir).</summary>
+    public DateOnly? ReleaseDate { get; set; }
+
+    /// <summary>
+    /// Oyun RAWG aramasından eklendiyse RAWG'daki kimliği. Yalnızca oluştururken atanır;
+    /// aynı kullanıcı aynı RAWG oyununu ikinci kez ekleyemez (benzersiz filtreli indeks).
+    /// </summary>
+    public int? RawgId { get; set; }
+
     /// <summary>Eklenme zamanı (UTC).</summary>
     public DateTime DateAdded { get; set; }
 

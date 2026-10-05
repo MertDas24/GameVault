@@ -29,7 +29,9 @@ public sealed record GameDetails(
     DateOnly? StartDate,
     DateOnly? CompletionDate,
     DateTime DateAdded,
-    DateTime UpdatedAtUtc);
+    DateTime UpdatedAtUtc,
+    DateOnly? ReleaseDate = null,
+    int? RawgId = null);
 
 public sealed record ReferenceItem(int Id, string Name);
 

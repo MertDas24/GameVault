@@ -66,7 +66,11 @@ $env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/Game
   paylaşır, Redis gerekmez.
 - **Güvenilir e-posta.** Doğrulama ve parola sıfırlama e-postaları veritabanındaki bir kuyruktan (outbox)
   gönderilir ve hata durumunda artan aralıklarla yeniden denenir.
-- **Gerçek testler.** 140'tan fazla entegrasyon testi `WebApplicationFactory` üzerinden gerçek bir SQL Server'a karşı
+- **Dayanıklı harici API.** RAWG oyun veritabanı `IHttpClientFactory` üzerinden çağrılır; zaman aşımı, boyutu
+  sınırlı bir önbellek ve basit bir devre kesici vardır. RAWG hata verirse sayfa bir mesaj gösterir, uygulamanın geri
+  kalanı çalışmaya devam eder. RAWG'a yalnızca arama metni gider. API anahtarı User Secrets'ta durur ve loglara asla
+  yazılmaz; bunu bir test doğrular.
+- **Gerçek testler.** 180'den fazla entegrasyon testi `WebApplicationFactory` üzerinden gerçek bir SQL Server'a karşı
   çalışır. Playwright E2E testleri masaüstü ve mobil akışları kapsar, axe-core da erişilebilirliği (WCAG 2.1 A/AA)
   denetler.
 - **Sıkı derleme.** Uyarılar hata sayılır, analizörler `latest-recommended` seviyesinde çalışır, paket sürümleri
@@ -77,7 +81,8 @@ $env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/Game
 | Alan | İçerik |
 |---|---|
 | Kütüphane | Kapak odaklı kartlar; ada göre arama; durum, platform, tür ve favori filtreleri; 7 sıralama; sayfalama |
-| Oyunlar | Ad, kapak (8 hazır kapak ya da izinli https adresi), açıklama, platform, en fazla 5 tür, durum, süre, 1–10 puan, notlar, başlama ve bitirme tarihleri, favori |
+| Oyunlar | Ad, kapak (8 hazır kapak ya da izinli https adresi), açıklama, platform, en fazla 5 tür, durum, süre, 1–10 puan, notlar, başlama, bitirme ve çıkış tarihleri, favori |
+| RAWG araması | [RAWG](https://rawg.io)'da isimle arama; kapak, çıkış tarihi, platform ve türleri görüp bir sonucu seçerek ekleme formunu doldurma. Her kullanıcı bir RAWG oyununu yalnızca bir kez ekleyebilir. |
 | İstatistikler | Toplam oyun ve süre, ortalama puan, tamamlama oranı, durum dağılımı, en çok kullanılan platform ve türler, en çok oynananlar |
 | Hesap | E-posta doğrulamalı kayıt, parola sıfırlama, görünen ad, parola değiştirme, diğer oturumları kapatma, JSON dışa aktarma, hesap silme |
 | Arayüz | Masaüstünde yan menü, mobilde alt gezinme çubuğu; klavyeyle kullanım; `aria-invalid` ile form hataları; azaltılmış hareket desteği |
@@ -92,6 +97,7 @@ Durumlar: Başlamadım · Oynuyorum · Bitirdim · Ara verdim · Bıraktım · �
 | Veri | SQL Server, Entity Framework Core 10, sürümlü migration'lar |
 | Kimlik doğrulama | ASP.NET Core Identity, sunucu tarafı oturum saklayan cookie kimlik doğrulaması |
 | E-posta | MailKit (SMTP), yerelde Mailpit |
+| Harici API | `IHttpClientFactory` ile RAWG Video Games Database (isteğe bağlı) |
 | Testler | xUnit v3, WebApplicationFactory, AngleSharp, Playwright (Chromium), axe-core |
 | Araçlar | Docker, Docker Compose, GitHub Actions, CodeQL, Dependabot, gitleaks |
 | Stil | Elle yazılmış, token tabanlı CSS. Ön yüz derleme adımı yoktur. |
@@ -115,13 +121,14 @@ flowchart LR
 
     D --> SQL[("SQL Server")]
     BL -- "arka plan işçisi" --> SMTP["SMTP<br/>(yerelde Mailpit)"]
+    BL -- "IHttpClientFactory<br/>timeout + önbellek" --> RAWG["RAWG API<br/>(isteğe bağlı)"]
 ```
 
 ```
 GameVault.Entities    → EF Core varlıkları (kullanıcılar, kütüphane oyunları, türler, platformlar, oturumlar…)
 GameVault.DataAccess  → DbContext ve migration'lar
-GameVault.Models      → Doğrulamalı girdi modelleri, sorgu normalleştirme, DTO'lar
-GameVault.Business    → Kütüphane, istatistik, hesap, oran sınırlama ve e-posta servisleri
+GameVault.Models      → Doğrulamalı girdi modelleri, sorgu normalleştirme, sağlayıcıdan bağımsız DTO'lar
+GameVault.Business    → Kütüphane, istatistik, hesap, oran sınırlama, e-posta ve oyun kataloğu (RAWG) servisleri
 GameVault.Web         → Razor Pages arayüzü, kimlik doğrulama, güvenlik başlıkları, başlangıç doğrulaması
 tests/GameVault.Tests → Birim ve entegrasyon testleri (gerçek SQL Server)
 tests/GameVault.E2E   → Playwright tarayıcı testleri
@@ -144,11 +151,14 @@ erDiagram
         int PlaytimeHours
         int Rating "1-10, boş olabilir"
         bool IsFavorite
+        date ReleaseDate "boş olabilir"
+        int RawgId "boş olabilir, kullanıcı başına benzersiz"
     }
 ```
 
 Bir kullanıcı silindiğinde oyunları ve oturumları da silinir (cascade). Her kütüphane sorgusu `UserId` ile
-filtrelenir ve bileşik indeksler `UserId` ile başlar: veri izolasyonu ve sorgu hızı aynı sütuna dayanır.
+filtrelenir ve bileşik indeksler `UserId` ile başlar: veri izolasyonu ve sorgu hızı aynı sütuna dayanır. `(UserId, RawgId)` üzerindeki filtreli benzersiz indeks, iki istek
+aynı anda gelse bile aynı RAWG oyununun iki kez eklenmesini engeller.
 
 Tasarım kararları ve gerekçeleri: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -163,6 +173,7 @@ tokenı ile korunan bir HTML form gönderimidir.
 | `/Account/Register`, `/Account/Login`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Account/ConfirmEmail` | herkese açık | Kayıt ve giriş akışları |
 | `/Library` | kullanıcı | Oyunları arama, filtreleme, sıralama ve sayfalama (`?q=&status=&platform=&genre=&fav=&sort=&size=&page=`) |
 | `/Library/New`, `/Library/{id}`, `/Library/{id}/Edit`, `/Library/{id}/Delete` | kullanıcı (yalnızca sahibi) | Oyun ekleme, görüntüleme, düzenleme ve silme |
+| `/Library/Search?q=` · `/Library/New?rawgId=` | kullanıcı | RAWG'da arama ve seçilen sonuçla ekleme formunu doldurma |
 | `/Stats` | kullanıcı | Kullanıcının kendi verisinden istatistikler |
 | `/Account/Settings`, `/Account/Export`, `/Account/Delete` | kullanıcı | Profil, parola, oturumlar, JSON dışa aktarma, hesap silme |
 | `/health` · `/health/live` | herkese açık | Hazırlık (veritabanı) ve canlılık kontrolü. Yalnızca `Healthy` ya da `Unhealthy` döner. |
@@ -196,6 +207,13 @@ dotnet run --project GameVault.Web -- seed-demo
 
 Bu komut `demo@gamevault.test` hesabını ve 9 kurgusal oyunu oluşturur.
 
+**İsteğe bağlı RAWG araması:** https://rawg.io/apidocs adresinden ücretsiz bir anahtar alın ve User Secrets'a
+kaydedin. Anahtar deponun dışında kalır; `appsettings*.json` dosyalarına asla yazmayın.
+
+```powershell
+dotnet user-secrets set "Rawg:ApiKey" "<anahtarınız>" --project GameVault.Web
+```
+
 ### Seçenek B: Docker Compose (SQL Server, Mailpit ve uygulama)
 
 ```bash
@@ -219,6 +237,8 @@ içermez. `dotnet user-secrets` ya da ortam değişkenleriyle değiştirilebilir
 | `Email__FromAddress` | `no-reply@gamevault.test` | Gönderen adresi |
 | `Covers__AllowedHosts__0` | yok | Harici kapak adresleri için izin verilen ek alan adı |
 | `Seed__DemoPassword` | yok | İsteğe bağlı demo hesabının parolası (yalnızca user-secrets) |
+| `Rawg__ApiKey` | yok | RAWG API anahtarı (yalnızca user-secrets). Tanımlı değilse RAWG araması gizlenir, geri kalan her şey çalışır. |
+| `Rawg__TimeoutSeconds` | `5` | Tek bir RAWG isteğinin zaman aşımı |
 | `GAMEVAULT_TEST_SQLSERVER` | LocalDB | Entegrasyon testlerinin kullandığı SQL Server (veritabanı adı olmadan) |
 
 Uygulama başlangıçta yapılandırmasını doğrular; geçersiz anahtarları (değerlerini göstermeden) listeleyip başlamayı

@@ -35,6 +35,7 @@ Katmanlı proje yapısı mevcut kod tabanından korunmuştur.
 | 13 | **Tarihler UTC saklanır**, `Europe/Istanbul` ile gösterilir | `DateTime` değerleri okurken `Kind=Utc` işaretlenir. Gösterim saat dilimi `App:DisplayTimeZone` ile ayarlanır. Başlama/bitirme tarihleri `date` (saatsiz). |
 | 14 | **Sunucu harici URL indirmez** | Kapaklar yerel SVG'ler ya da izin listesindeki https adresleridir; SSRF yüzeyi yoktur. Dosya yükleme ilk sürümde yok. |
 | 15 | **Varsayılan olarak kimlik doğrulama zorunlu** (fallback policy) | Yeni bir sayfa yanlışlıkla herkese açık kalmaz. Herkese açık sayfalar `[AllowAnonymous]` ile işaretlenir. |
+| 16 | **RAWG entegrasyonu Business katmanında, isteğe bağlı** | `GameCatalog`, `IHttpClientFactory` ile sabit bir https adresine istek atar (kullanıcı adres veremez, SSRF yüzeyi yoktur). RAWG yanıt modelleri `internal`; sayfalar yalnızca sağlayıcıdan bağımsız `CatalogGame` görür. RAWG verisi doğrudan kaydedilmez, formu doldurur ve normal doğrulamadan geçer. Zaman aşımı, sınırlı önbellek ve basit devre kesici sayesinde RAWG çökse de uygulama çalışır. Anahtar URL'de taşındığı için bu istemcinin istek logları kapalıdır. Önbellek instance başınadır; birden fazla instance'ta her biri kendi önbelleğini tutar (kabul edilen ödünleşim). |
 
 ## İstek akışı
 

@@ -59,6 +59,7 @@ public class GameVaultDbContext(DbContextOptions<GameVaultDbContext> options)
                 t.HasCheckConstraint("CK_LibraryGames_Rating", "[Rating] IS NULL OR ([Rating] >= 1 AND [Rating] <= 10)");
                 t.HasCheckConstraint("CK_LibraryGames_PlaytimeHours", "[PlaytimeHours] >= 0 AND [PlaytimeHours] <= 100000");
                 t.HasCheckConstraint("CK_LibraryGames_Status", "[Status] >= 0 AND [Status] <= 5");
+                t.HasCheckConstraint("CK_LibraryGames_RawgId", "[RawgId] IS NULL OR [RawgId] > 0");
             });
 
             entity.Property(g => g.Title).IsRequired().HasMaxLength(TitleMaxLength);
@@ -89,6 +90,8 @@ public class GameVaultDbContext(DbContextOptions<GameVaultDbContext> options)
             entity.HasIndex(g => new { g.UserId, g.Title });
             entity.HasIndex(g => new { g.UserId, g.Status });
             entity.HasIndex(g => new { g.UserId, g.IsFavorite });
+            // Aynı RAWG oyunu aynı kullanıcının kütüphanesinde bir kez bulunabilir; farklı kullanıcılar ekleyebilir.
+            entity.HasIndex(g => new { g.UserId, g.RawgId }).IsUnique().HasFilter("[RawgId] IS NOT NULL");
             entity.HasIndex(g => g.PlatformId);
         });
 

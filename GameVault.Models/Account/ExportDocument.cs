@@ -24,4 +24,6 @@ public sealed record ExportGame(
     DateOnly? StartDate,
     DateOnly? CompletionDate,
     DateTime DateAddedUtc,
-    DateTime UpdatedAtUtc);
+    DateTime UpdatedAtUtc,
+    DateOnly? ReleaseDate = null,
+    int? RawgId = null);

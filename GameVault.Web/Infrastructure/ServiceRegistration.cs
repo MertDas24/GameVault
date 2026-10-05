@@ -1,5 +1,6 @@
 using System.Globalization;
 using GameVault.Business.Account;
+using GameVault.Business.Catalog;
 using GameVault.Business.Covers;
 using GameVault.Business.Email;
 using GameVault.Business.Library;
@@ -49,6 +50,15 @@ public static class ServiceRegistration
         services.Configure<AppOptions>(config.GetSection(AppOptions.SectionName));
         services.Configure<SecurityOptions>(config.GetSection(SecurityOptions.SectionName));
         services.Configure<CoverOptions>(config.GetSection(CoverOptions.SectionName));
+        services.AddOptions<RawgOptions>().Bind(config.GetSection(RawgOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
+        // RAWG etkinse kapak görsellerinin sunulduğu alan adı kapak izin listesine (ve dolayısıyla CSP img-src'ye) eklenir.
+        services.AddOptions<CoverOptions>().PostConfigure<IOptions<RawgOptions>>((covers, rawg) =>
+        {
+            if (rawg.Value.Enabled && !covers.AllowedHosts.Contains(RawgOptions.CoverHost, StringComparer.OrdinalIgnoreCase))
+            {
+                covers.AllowedHosts.Add(RawgOptions.CoverHost);
+            }
+        });
         services.Configure<RateLimitOptions>(config.GetSection(RateLimitOptions.SectionName));
         services.AddOptions<LibraryOptions>().Bind(config.GetSection(LibraryOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
         services.AddOptions<EmailOptions>().Bind(config.GetSection(EmailOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
@@ -201,6 +211,29 @@ public static class ServiceRegistration
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
         services.AddHostedService<EmailDispatchService>();
         services.AddHostedService<MaintenanceService>();
+
+        // --- RAWG oyun kataloğu ---
+        // IHttpClientFactory: bağlantı havuzu ve DNS yenilemesi fabrika tarafından yönetilir.
+        services.AddHttpClient(RawgOptions.HttpClientName, (sp, client) =>
+            {
+                var o = sp.GetRequiredService<IOptions<RawgOptions>>().Value;
+                client.BaseAddress = new Uri(o.BaseUrl);
+                // GameCatalog kendi zaman aşımını uygular; bu değer yalnızca ikinci bir güvenlik sınırıdır.
+                client.Timeout = TimeSpan.FromSeconds(o.TimeoutSeconds + 2);
+                client.MaxResponseContentBufferSize = 1024 * 1024;
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("GameVault/1.0");
+                client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+            })
+            // Çerez gönderilmez, yönlendirme izlenmez: RAWG'a giden istek yalnızca arama ve anahtardan oluşur.
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                UseCookies = false,
+                AllowAutoRedirect = false,
+                AutomaticDecompression = System.Net.DecompressionMethods.All
+            })
+            // Varsayılan HttpClient logları istek adresini yazar; RAWG anahtarı adreste taşındığı için kapatılır.
+            .RemoveAllLoggers();
+        services.AddSingleton<GameCatalog>();
 
         return builder;
     }
