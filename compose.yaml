@@ -6,6 +6,9 @@ name: gamevault
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-CU27-ubuntu-22.04
+    # SQL Server imajı yalnızca amd64 için yayımlanır. Apple Silicon'da Docker Desktop bunu emülasyonla
+    # (Rosetta) çalıştırır; amd64 makinelerde bu satırın etkisi yoktur.
+    platform: linux/amd64
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: "Developer"

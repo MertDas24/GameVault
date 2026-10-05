@@ -250,6 +250,44 @@ Bu aşamada yapılanlar:
 > **Cevap:** CI her değişikliği otomatik olarak derleyip test eder. CD (Continuous Delivery/Deployment) testleri
 > geçen sürümü otomatik olarak yayına alır. Bu projede yalnızca CI var, çünkü proje yayına alınmıyor.
 
+### Aşama 5: Docker ve Docker Compose
+**Docker:** Uygulamayı, çalışması için gereken her şeyle (.NET runtime, dosyalar) birlikte bir **imaja** paketler.
+İmaj her makinede aynı şekilde çalışır. **Compose** ise birden fazla konteyneri (uygulama, SQL Server, Mailpit)
+tek komutla birlikte başlatır.
+
+[Dockerfile](../Dockerfile) dosyasını okurken dikkat edilecek noktalar:
+- **Çok aşamalı derleme (multi-stage build):** Kod, büyük SDK imajında derlenir. Son imaja yalnızca derlenmiş
+  dosyalar ve küçük ASP.NET runtime imajı girer. Böylece son imajda derleyici ve kaynak kod olmaz; imaj küçülür ve
+  saldırı yüzeyi azalır.
+- **Katman önbelleği:** Önce yalnızca `.csproj` ve `packages.lock.json` kopyalanıp `restore` yapılır, kod daha
+  sonra kopyalanır. Kod değiştiğinde paketler yeniden indirilmez.
+- **`USER $APP_UID`:** Uygulama root olarak çalışmaz. Bir açık bulunsa bile saldırgan konteynerde root yetkisi
+  kazanmaz. CI bunu ayrıca kontrol eder.
+- **Sır yok:** Parolalar imaja gömülmez, çalışma zamanında ortam değişkeni olarak verilir. `.dockerignore`, `.env`
+  ve sertifika dosyalarının imaja kopyalanmasını engeller.
+- **Ayrı migration imajı (`migrator`):** Veritabanı şeması, uygulama başlamadan önce bir kez güncellenir. Birden
+  fazla uygulama kopyası aynı anda migration çalıştırmaya çalışmaz.
+
+[compose.yaml](../compose.yaml) dosyasında:
+- **Servis adları ağ adresidir:** Uygulama veritabanına `Server=sqlserver` diye bağlanır. Compose, servisler için
+  ortak bir iç ağ kurar.
+- **`127.0.0.1:8080:8080`:** Port yalnızca bu bilgisayardan erişilebilir. Sadece `8080:8080` yazılsaydı, aynı Wi-Fi
+  ağındaki herkes erişebilirdi. (RabbitMQ'da gördüğün sorunun aynısı.)
+- **`healthcheck` + `depends_on: condition: service_healthy`:** Uygulama, SQL Server sorgu kabul etmeye
+  başlayana kadar bekler. Yalnızca "konteyner başladı" demek, "veritabanı hazır" demek değildir.
+- **`${MSSQL_SA_PASSWORD:?...}`:** Parola `.env` dosyasında tanımlı değilse Compose başlamaz. Varsayılan bir parola
+  bilerek verilmez.
+
+Bu aşamada yapılanlar:
+- Bu makinede Docker olmadığı için imajlar CI'da derleniyor. Yerelde, Dockerfile ve compose dosyasındaki beş imaj
+  etiketinin registry'lerde gerçekten var olduğu doğrulandı.
+- SQL Server imajı yalnızca amd64 için yayımlandığından compose dosyasına `platform: linux/amd64` eklendi. Apple
+  Silicon Mac'lerde emülasyonla çalışır.
+
+> **Mülakat sorusu:** "Konteyner ile sanal makine arasındaki fark nedir?"
+> **Cevap:** Sanal makine kendi işletim sistemi çekirdeğini çalıştırır. Konteyner ise ana makinenin çekirdeğini
+> paylaşır ve yalnızca süreçleri izole eder. Bu yüzden konteyner daha hafiftir ve saniyeler içinde başlar.
+
 ---
 
 ## Kendi notlarım
