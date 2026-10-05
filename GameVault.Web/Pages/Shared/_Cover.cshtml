@@ -1,0 +1,9 @@
+@model (string Title, string? Url, string CssClass)
+@inject CoverPolicy Covers
+<div class="cover @Model.CssClass">
+    <div class="cover-fallback" aria-hidden="true"><span>@Display.Initials(Model.Title)</span></div>
+    @if (Covers.IsDisplayable(Model.Url))
+    {
+        <img src="@Model.Url" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-cover>
+    }
+</div>

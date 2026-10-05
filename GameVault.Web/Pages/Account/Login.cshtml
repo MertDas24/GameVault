@@ -1,0 +1,47 @@
+@page
+@model GameVault.Web.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Giriş yap";
+}
+<section class="auth-card" aria-labelledby="login-heading">
+    <h1 id="login-heading">Giriş yap</h1>
+    <p class="muted">Kütüphanene erişmek için hesabınla giriş yap.</p>
+
+    @if (Model.Error is not null)
+    {
+        <div class="alert alert-error" role="alert">
+            @Model.Error
+            @if (Model.ShowResendLink)
+            {
+                <a href="/Account/ResendConfirmation">Doğrulama bağlantısını yeniden gönder</a>
+            }
+        </div>
+    }
+
+    <form method="post" class="form" data-busy-form novalidate>
+        <input type="hidden" asp-for="ReturnUrl">
+        <div class="field">
+            <label asp-for="Input.Email">E-posta</label>
+            <input asp-for="Input.Email" type="email" autocomplete="username" required maxlength="256" autofocus>
+            <span asp-validation-for="Input.Email" id="Input_Email-error" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.Password">Parola</label>
+            <input asp-for="Input.Password" autocomplete="current-password" required maxlength="256">
+            <span asp-validation-for="Input.Password" id="Input_Password-error" class="field-error"></span>
+        </div>
+        <div class="field field-check">
+            <input asp-for="Input.RememberMe">
+            <label asp-for="Input.RememberMe">Beni hatırla (7 gün)</label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" data-busy-text="Giriş yapılıyor…">Giriş yap</button>
+    </form>
+
+    <p class="auth-links">
+        <a href="/Account/ForgotPassword">Parolamı unuttum</a>
+        <span aria-hidden="true">·</span>
+        <a href="/Account/Register">Hesap oluştur</a>
+        <span aria-hidden="true">·</span>
+        <a href="/Account/ResendConfirmation">Doğrulama e-postası gelmedi mi?</a>
+    </p>
+</section>

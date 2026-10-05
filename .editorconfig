@@ -1,0 +1,82 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{json,yml,yaml,xml,csproj,props,targets,slnx,config}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{cs,cshtml}]
+charset = utf-8
+
+[*.cs]
+# Düzen
+csharp_new_line_before_open_brace = all
+csharp_prefer_braces = true:warning
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+
+# Adlandırma: özel alanlar _camelCase
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_fields.required_modifiers =
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+
+dotnet_naming_rule.private_static_readonly.symbols = private_static_readonly
+dotnet_naming_rule.private_static_readonly.style = pascal
+dotnet_naming_rule.private_static_readonly.severity = warning
+dotnet_naming_symbols.private_static_readonly.applicable_kinds = field
+dotnet_naming_symbols.private_static_readonly.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_readonly.required_modifiers = static, readonly
+dotnet_naming_style.pascal.capitalization = pascal_case
+
+dotnet_naming_rule.private_const.symbols = private_const
+dotnet_naming_rule.private_const.style = pascal
+dotnet_naming_rule.private_const.severity = warning
+dotnet_naming_symbols.private_const.applicable_kinds = field
+dotnet_naming_symbols.private_const.applicable_accessibilities = private
+dotnet_naming_symbols.private_const.required_modifiers = const
+
+# Uygulama kodunda ConfigureAwait gerekmez (ASP.NET Core'da SynchronizationContext yok).
+dotnet_diagnostic.CA2007.severity = none
+# Türkçe kullanıcı mesajları kaynak dosyası yerine koda gömülüdür (tek dilli uygulama).
+dotnet_diagnostic.CA1303.severity = none
+# Razor Pages/record DTO'larında koleksiyon özellikleri bilinçli olarak ayarlanabilir.
+dotnet_diagnostic.CA2227.severity = none
+dotnet_diagnostic.CA1002.severity = none
+# URI'ler string olarak saklanır ve CoverPolicy ile doğrulanır.
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1056.severity = none
+dotnet_diagnostic.CA1055.severity = none
+# Hosted servis/DI tarafından örneklenen iç sınıflar.
+dotnet_diagnostic.CA1812.severity = none
+# Genel sonuç türlerinde statik fabrika metotları (OperationResult<T>.Success) kasıtlıdır.
+dotnet_diagnostic.CA1000.severity = none
+# Test adları alt çizgi içerir.
+dotnet_diagnostic.CA1707.severity = none
+# ToLowerInvariant: alan adları ve anahtarlar için kasıtlı küçük harf normalleştirme.
+dotnet_diagnostic.CA1308.severity = none
+
+# EF Core migration dosyaları üretilmiş koddur.
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none

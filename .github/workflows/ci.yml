@@ -1,0 +1,182 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Varsayılan olarak yalnızca okuma. İş bazında gerekirse genişletilir.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  build-test:
+    name: Lint, build, test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Start throwaway SQL Server
+        # CI veritabanı geçici bir konteynerdir; parola her çalıştırmada rastgele üretilir,
+        # maskelenir ve hiçbir yere kaydedilmez. Üretim ya da gerçek kullanıcı verisi kullanılmaz.
+        run: |
+          PW="Gv$(openssl rand -hex 16)Aa1"
+          echo "::add-mask::$PW"
+          docker run -d --name mssql -e ACCEPT_EULA=Y -e MSSQL_PID=Developer -e "MSSQL_SA_PASSWORD=$PW" \
+            -p 1433:1433 mcr.microsoft.com/mssql/server:2022-CU27-ubuntu-22.04
+          for i in $(seq 1 60); do
+            if docker exec mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$PW" -C -Q "SELECT 1" -b -o /dev/null; then
+              echo "SQL Server hazır"; break
+            fi
+            sleep 2
+          done
+          echo "GAMEVAULT_TEST_SQLSERVER=Server=localhost,1433;User Id=sa;Password=$PW;TrustServerCertificate=True" >> "$GITHUB_ENV"
+
+      - name: Restore (locked)
+        run: |
+          dotnet tool restore
+          dotnet restore GameVault.slnx --locked-mode
+
+      - name: Format check
+        run: dotnet format GameVault.slnx --verify-no-changes --no-restore
+
+      - name: Build (warnings as errors)
+        run: dotnet build GameVault.slnx -c Release --no-restore
+
+      - name: Vulnerable dependency check
+        run: |
+          dotnet list GameVault.slnx package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+          if grep -qiE "has the following vulnerable packages|aşağıdaki güvenlik açığı" vulnerable.txt; then
+            echo "::error::Güvenlik açığı bulunan paket var."; exit 1
+          fi
+
+      - name: Check migrations are up to date
+        run: dotnet ef migrations has-pending-model-changes --project GameVault.DataAccess --startup-project GameVault.DataAccess --no-build --configuration Release
+
+      - name: Unit and integration tests
+        run: dotnet test tests/GameVault.Tests -c Release --no-build
+
+      - name: Install Playwright Chromium
+        run: pwsh tests/GameVault.E2E/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: End-to-end tests
+        run: dotnet test tests/GameVault.E2E -c Release --no-build
+
+      - name: Upload E2E screenshots
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-screenshots
+          path: tests/GameVault.E2E/bin/Release/net10.0/e2e-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  docker:
+    name: Docker image build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build runtime and migrator images (no push)
+        run: |
+          docker build --target runtime -t gamevault:ci .
+          docker build --target migrator -t gamevault-migrator:ci .
+          # Uygulama root olmayan kullanıcıyla çalışmalı.
+          test "$(docker image inspect gamevault:ci --format '{{.Config.User}}')" != ""
+          test "$(docker image inspect gamevault:ci --format '{{.Config.User}}')" != "root"
+
+      - name: Production image refuses to start without required configuration
+        # Güvenli başarısızlık: Data Protection sertifikası ve üretim ayarları yoksa uygulama başlamamalı
+        # ve hatalı anahtarları (değer göstermeden) bildirmeli.
+        run: |
+          set +e
+          timeout 60 docker run --rm \
+            -e ConnectionStrings__DefaultConnection="Server=db.invalid;Database=x;Encrypt=True" \
+            -e App__PublicBaseUrl=https://gamevault.example.com \
+            -e Email__Host=smtp.example.com -e Email__FromAddress=no-reply@example.com \
+            gamevault:ci > prod-start.log 2>&1
+          code=$?
+          set -e
+          cat prod-start.log
+          test "$code" -ne 0
+          test "$code" -ne 124   # zaman aşımı değil, gerçekten reddetmeli
+          grep -q "DataProtection:Certificate:Path" prod-start.log
+
+      - name: Compose smoke test (app + SQL Server + Mailpit)
+        run: |
+          # Yerel geliştirme compose dosyası; parola rastgele ve yalnızca bu çalıştırmaya özgü.
+          echo "MSSQL_SA_PASSWORD=Gv$(openssl rand -hex 16)Aa1" > .env
+          docker compose up -d --build --wait sqlserver mailpit
+          docker compose up -d --build app
+          ok=
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/health/live >/dev/null 2>&1; then ok=1; break; fi
+            sleep 2
+          done
+          test -n "$ok"
+          # /health veritabanı bağlantısını denetler (migration'lar Development'ta başlangıçta uygulanır).
+          test "$(curl -fsS http://127.0.0.1:8080/health)" = "Healthy"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/Account/Login)" = "200"
+
+      - name: Compose logs on failure
+        if: failure()
+        run: docker compose logs --no-color app | tail -n 200
+
+      - name: Compose down
+        if: always()
+        run: |
+          docker compose down -v || true
+          rm -f .env
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Download and verify gitleaks
+        # gitleaks CLI doğrudan indirilir ve SHA-256 ile doğrulanır (lisans anahtarı gerekmez).
+        run: |
+          curl -sSfL -o gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+      - name: Scan full history
+        run: ./gitleaks git --redact --no-banner --exit-code 1 .
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Genel depolarda ücretsiz; özel depolarda GitHub Advanced Security / Code Security gerekir.
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate

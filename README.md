@@ -1,0 +1,147 @@
+<div align="center">
+
+# 🎮 GameVault
+
+**A personal video game library: track what you play, what you finished and what's next.**
+
+![.NET 10](https://img.shields.io/badge/.NET_10-512BD4?logo=dotnet&logoColor=white)
+![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-Razor_Pages-512BD4?logo=dotnet&logoColor=white)
+![EF Core](https://img.shields.io/badge/EF_Core_10-512BD4?logo=dotnet&logoColor=white)
+![SQL Server](https://img.shields.io/badge/SQL_Server-CC2927?logo=microsoftsqlserver&logoColor=white)
+![ASP.NET Core Identity](https://img.shields.io/badge/Auth-ASP.NET_Core_Identity-0A7BBB)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?logo=githubactions&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-xUnit_%2B_Playwright-25A162)
+![License: MIT](https://img.shields.io/badge/license-MIT-yellow)
+
+[Türkçe README](README.tr.md)
+
+</div>
+
+GameVault is a server-rendered ASP.NET Core web app where every user keeps a private game library. Users can add
+games with covers, platforms and genres, track status, playtime and ratings, filter and search their collection,
+see statistics, and export or delete all of their data. The UI is in Turkish and uses a dark theme.
+
+> This is a **portfolio project**. It runs locally and in CI, but it is not deployed anywhere and it does not
+> collect real user data.
+
+## Highlights
+
+What I focused on, beyond the CRUD:
+
+- **Per-user data isolation.** Every query is scoped to the signed-in user. Integration tests prove that one
+  user cannot read, edit, delete or export another user's games, even when they know the game's ID, and that owner fields sent by the client are ignored.
+- **Revocable server-side sessions.** The auth cookie only holds a reference to a session row in SQL Server
+  (`ITicketStore`). Logout, a password change, a password reset or account deletion invalidates it immediately.
+- **Secure by default.** Authorization is required on every page unless the page opts out. The app sends a strict
+  Content Security Policy, antiforgery runs on every form and the login responses don't reveal whether an account
+  exists.
+- **Rate limiting that works across instances.** One atomic SQL `MERGE` counter is shared by all instances, with no
+  Redis needed.
+- **Reliable email.** Confirmation and password-reset mails go through a database outbox and are retried with
+  backoff.
+- **Real tests.** 140+ integration tests run against a real SQL Server through `WebApplicationFactory`. Playwright
+  E2E tests cover desktop and mobile flows, and axe-core checks accessibility (WCAG 2.1 A/AA).
+- **Strict build.** Warnings are treated as errors, analyzers run at `latest-recommended`, package versions are
+  centrally managed and locked, and CI checks that the migrations match the model.
+
+## Features
+
+| Area | What you can do |
+|---|---|
+| Library | Cover-first cards, search by title, filter by status, platform, genre or favorite, 7 sort orders, pagination |
+| Games | Title, cover (8 built-in covers or an allow-listed https URL), description, platform, up to 5 genres, status, playtime, 1–10 rating, notes, start/finish dates, favorite |
+| Statistics | Total games and hours, average rating, completion rate, status breakdown, top platforms and genres, most played |
+| Account | Registration with email confirmation, password reset, display name, password change, sign out other sessions, JSON export, account deletion |
+| UX | Responsive layout with a sidebar on desktop and a bottom nav on mobile, keyboard accessible, `aria-invalid` form errors, reduced motion support |
+
+Statuses: Not started · Playing · Completed · On hold · Dropped · Wishlist.
+
+## Tech stack
+
+| Layer | Choice |
+|---|---|
+| Runtime | .NET 10 (LTS), ASP.NET Core Razor Pages (server-side rendering, progressive JS) |
+| Data | SQL Server, Entity Framework Core 10, versioned migrations |
+| Auth | ASP.NET Core Identity with cookie authentication and server-side session storage |
+| Email | MailKit (SMTP), Mailpit for local development |
+| Tests | xUnit v3, WebApplicationFactory, AngleSharp, Playwright (Chromium), axe-core |
+| Tooling | Docker, Docker Compose, GitHub Actions, CodeQL, Dependabot, gitleaks |
+| Styling | Hand-written, token-based CSS. There is no frontend build step. |
+
+## Architecture
+
+A single ASP.NET Core app with a layered solution:
+
+```
+GameVault.Entities    → EF Core entities (users, library games, genres, platforms, sessions…)
+GameVault.DataAccess  → DbContext and migrations
+GameVault.Models      → Input models with validation, query normalization, DTOs
+GameVault.Business    → Library, statistics, account, rate limiting and email services
+GameVault.Web         → Razor Pages UI, authentication, security headers, startup validation
+tests/GameVault.Tests → Unit and integration tests (real SQL Server)
+tests/GameVault.E2E   → Playwright browser tests
+```
+
+Design decisions and their reasons are listed in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Getting started
+
+### Option A: Windows and LocalDB
+
+Requirements: .NET SDK 10.0.401 or later and SQL Server LocalDB (installed with Visual Studio).
+
+```powershell
+dotnet tool restore
+dotnet run --project GameVault.Web --launch-profile http
+```
+
+Open http://localhost:5226. In Development the `GameVaultDev` database is created and migrated automatically.
+
+New accounts must confirm their email before they can sign in. Run [Mailpit](https://mailpit.axllent.org/) to
+receive the local mails at http://localhost:8025. Development refuses to start with a non-local SMTP server, so no
+real email is ever sent.
+
+**Optional demo data** (fictional, Development only):
+
+```powershell
+dotnet user-secrets set "Seed:DemoPassword" "<at least 10 characters>" --project GameVault.Web
+dotnet run --project GameVault.Web -- seed-demo
+```
+
+This creates `demo@gamevault.test` with 9 fictional games.
+
+### Option B: Docker Compose (SQL Server, Mailpit and the app)
+
+```bash
+cp .env.example .env        # set your own MSSQL_SA_PASSWORD
+docker compose up --build
+```
+
+The app runs at http://localhost:8080 and Mailpit at http://localhost:8025.
+
+## Running the tests
+
+```powershell
+dotnet build GameVault.slnx -c Release          # build + analyzers (warnings are errors)
+dotnet test tests/GameVault.Tests               # unit + integration (needs LocalDB or GAMEVAULT_TEST_SQLSERVER)
+powershell -ExecutionPolicy Bypass -File tests/GameVault.E2E/bin/Debug/net10.0/playwright.ps1 install chromium
+dotnet test tests/GameVault.E2E                 # browser tests
+```
+
+Each integration test class creates a temporary `GameVaultTest_*` database and drops it afterwards. The test
+harness refuses to run against any database without that prefix.
+
+## Documentation
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): architecture and design decisions
+- [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md): threat model
+- [docs/OPERATIONS.md](docs/OPERATIONS.md): configuration reference and production checklist
+- [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md)
+
+The detailed docs are in Turkish.
+
+## License
+
+[MIT](LICENSE). The built-in cover images are original SVGs generated by
+[tools/generate-covers.js](tools/generate-covers.js).

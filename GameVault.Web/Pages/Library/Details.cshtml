@@ -1,0 +1,69 @@
+@page "/Library/{id:guid}"
+@inject Display Fmt
+@model GameVault.Web.Pages.Library.DetailsModel
+@{
+    var g = Model.Game;
+    ViewData["Title"] = g.Title;
+    ViewData["Section"] = "library";
+}
+<a class="back-link" href="/Library"><partial name="_Icon" model="@("back")" /> Kütüphane</a>
+
+<article class="detail">
+    <partial name="_Cover" model="@((g.Title, g.CoverImageUrl, "cover-detail"))" />
+
+    <div class="detail-body">
+        <header class="detail-header">
+            <h1 class="detail-title">@g.Title</h1>
+            <div class="detail-badges">
+                <span class="badge status-@StatusLabels.Key(g.Status)">@StatusLabels.Label(g.Status)</span>
+                <span class="badge badge-neutral">@g.PlatformName</span>
+                @if (g.IsFavorite)
+                {
+                    <span class="badge badge-fav"><partial name="_Icon" model="@("star")" /> Favori</span>
+                }
+            </div>
+        </header>
+
+        <dl class="facts">
+            <div><dt>Kişisel puan</dt><dd>@(g.Rating is { } r ? $"{r} / 10" : "Puanlanmadı")</dd></div>
+            <div><dt>Oynama süresi</dt><dd>@Display.Number(g.PlaytimeHours) saat</dd></div>
+            <div><dt>Türler</dt><dd>@(g.Genres.Count > 0 ? string.Join(", ", g.Genres.Select(x => x.Name)) : "Belirtilmedi")</dd></div>
+            <div><dt>Eklenme</dt><dd>@Fmt.Date(g.DateAdded)</dd></div>
+            @if (g.StartDate is { } start)
+            {
+                <div><dt>Başlama</dt><dd>@Display.Date(start)</dd></div>
+            }
+            @if (g.CompletionDate is { } end)
+            {
+                <div><dt>Bitirme</dt><dd>@Display.Date(end)</dd></div>
+            }
+            <div><dt>Son güncelleme</dt><dd>@Fmt.Timestamp(g.UpdatedAtUtc)</dd></div>
+        </dl>
+
+        @if (!string.IsNullOrWhiteSpace(g.Description))
+        {
+            <section aria-labelledby="desc-heading">
+                <h2 id="desc-heading" class="section-title">Açıklama</h2>
+                <p class="prose">@g.Description</p>
+            </section>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(g.Notes))
+        {
+            <section aria-labelledby="notes-heading">
+                <h2 id="notes-heading" class="section-title">Notlarım</h2>
+                <p class="prose">@g.Notes</p>
+            </section>
+        }
+
+        <div class="detail-actions">
+            <a class="btn btn-primary" href="/Library/@g.Id/Edit"><partial name="_Icon" model="@("edit")" /> Düzenle</a>
+            <form method="post" asp-page-handler="Favorite" asp-route-id="@g.Id">
+                <button type="submit" class="btn btn-secondary" aria-pressed="@(g.IsFavorite ? "true" : "false")">
+                    <partial name="_Icon" model="@("star")" /> @(g.IsFavorite ? "Favorilerden çıkar" : "Favorilere ekle")
+                </button>
+            </form>
+            <a class="btn btn-danger-ghost" href="/Library/@g.Id/Delete"><partial name="_Icon" model="@("trash")" /> Sil…</a>
+        </div>
+    </div>
+</article>

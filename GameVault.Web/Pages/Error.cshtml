@@ -1,0 +1,11 @@
+@page
+@model GameVault.Web.Pages.ErrorModel
+@{
+    ViewData["Title"] = Model.Heading;
+}
+<section class="empty-state" aria-labelledby="error-heading">
+    <p class="error-code" aria-hidden="true">@Model.Code</p>
+    <h1 id="error-heading">@Model.Heading</h1>
+    <p>@Model.Message</p>
+    <a class="btn btn-primary" href="/">Ana sayfaya dön</a>
+</section>

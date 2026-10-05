@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <!-- Eski GameVault.API projesinden farklı bir kimlik: eski user-secrets (JWT anahtarı,
+         mevcut veritabanı bağlantısı) bu uygulamaya yanlışlıkla yüklenmez. -->
+    <UserSecretsId>25ce436a-3ea1-40b6-99e1-b17a8fcca178</UserSecretsId>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GameVault.Business\GameVault.Business.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="GameVault.Tests" />
+    <InternalsVisibleTo Include="GameVault.E2E" />
+  </ItemGroup>
+
+</Project>

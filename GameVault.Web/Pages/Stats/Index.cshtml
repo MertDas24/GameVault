@@ -1,0 +1,94 @@
+@page "/Stats"
+@model GameVault.Web.Pages.Stats.IndexModel
+@{
+    ViewData["Title"] = "İstatistikler";
+    ViewData["Section"] = "stats";
+    var s = Model.Stats;
+}
+<header class="page-header">
+    <div>
+        <h1>İstatistikler</h1>
+        <p class="muted">Yalnızca kendi kütüphanendeki kayıtlardan hesaplanır.</p>
+    </div>
+</header>
+
+@if (s.TotalGames == 0)
+{
+    <section class="empty-state" aria-labelledby="empty-heading">
+        <partial name="_Icon" model="@("chart")" />
+        <h2 id="empty-heading">Henüz istatistik yok</h2>
+        <p>Kütüphanene oyun ekledikçe burada özetini göreceksin.</p>
+        <a class="btn btn-primary" href="/Library/New">Oyun ekle</a>
+    </section>
+}
+else
+{
+    <section class="stat-tiles" aria-label="Özet">
+        <div class="stat-tile"><span class="stat-label">Toplam oyun</span><span class="stat-value">@Display.Number(s.TotalGames)</span></div>
+        <div class="stat-tile"><span class="stat-label">Toplam oynama</span><span class="stat-value">@Display.Number(s.TotalPlaytimeHours) sa</span></div>
+        <div class="stat-tile"><span class="stat-label">Ortalama puan</span><span class="stat-value">@(s.AverageRating is { } avg ? Display.OneDecimal(avg) : "—")</span><span class="stat-sub">@s.RatedGames oyun puanlandı</span></div>
+        <div class="stat-tile"><span class="stat-label">Tamamlama oranı</span><span class="stat-value">@(s.CompletionRate is { } cr ? Display.Percent(cr) : "—")</span><span class="stat-sub">İstek listesi hariç</span></div>
+        <div class="stat-tile"><span class="stat-label">Favori</span><span class="stat-value">@Display.Number(s.Favorites)</span></div>
+    </section>
+
+    <div class="stats-grid">
+        <section class="panel" aria-labelledby="status-heading">
+            <h2 id="status-heading">Durumlara göre</h2>
+            <ul class="bar-list">
+                @foreach (var status in StatusLabels.Ordered)
+                {
+                    var count = s.ByStatus.GetValueOrDefault(status);
+                    <li>
+                        <span class="bar-label"><span class="dot status-@StatusLabels.Key(status)" aria-hidden="true"></span>@StatusLabels.Label(status)</span>
+                        <progress max="@s.TotalGames" value="@count" aria-label="@StatusLabels.Label(status): @count / @s.TotalGames">@count</progress>
+                        <span class="bar-value">@count</span>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        <section class="panel" aria-labelledby="platform-heading">
+            <h2 id="platform-heading">En çok kullanılan platformlar</h2>
+            <ol class="rank-list">
+                @foreach (var item in s.TopPlatforms)
+                {
+                    <li><span class="rank-row"><span class="break-anywhere">@item.Name</span><span class="rank-value">@item.Count oyun</span></span></li>
+                }
+            </ol>
+        </section>
+
+        <section class="panel" aria-labelledby="genre-heading">
+            <h2 id="genre-heading">En sık türler</h2>
+            @if (s.TopGenres.Count == 0)
+            {
+                <p class="muted">Oyunlarına henüz tür eklemedin.</p>
+            }
+            else
+            {
+                <ol class="rank-list">
+                    @foreach (var item in s.TopGenres)
+                    {
+                        <li><span class="rank-row"><span class="break-anywhere">@item.Name</span><span class="rank-value">@item.Count oyun</span></span></li>
+                    }
+                </ol>
+            }
+        </section>
+
+        <section class="panel" aria-labelledby="played-heading">
+            <h2 id="played-heading">En çok oynananlar</h2>
+            @if (s.MostPlayed.Count == 0)
+            {
+                <p class="muted">Henüz oynama süresi girilmedi.</p>
+            }
+            else
+            {
+                <ol class="rank-list">
+                    @foreach (var item in s.MostPlayed)
+                    {
+                        <li><span class="rank-row"><span class="break-anywhere">@item.Name</span><span class="rank-value">@Display.Number(item.Count) sa</span></span></li>
+                    }
+                </ol>
+            }
+        </section>
+    </div>
+}

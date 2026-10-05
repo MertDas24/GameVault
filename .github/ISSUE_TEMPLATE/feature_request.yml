@@ -1,0 +1,26 @@
+name: Özellik isteği
+description: Yeni bir özellik ya da iyileştirme önerin.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Hangi sorunu çözüyor?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Önerilen çözüm
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Düşünülen alternatifler
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Kapsam
+      options:
+        - label: Bu istek ödeme, sohbet, sosyal ağ veya yönetici paneli içermiyor (ilk sürümün kapsamı dışında).

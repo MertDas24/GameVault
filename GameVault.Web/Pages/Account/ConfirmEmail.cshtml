@@ -1,0 +1,23 @@
+@page
+@model GameVault.Web.Pages.Account.ConfirmEmailModel
+@{
+    ViewData["Title"] = "E-posta doğrulama";
+}
+<section class="auth-card" aria-labelledby="confirm-heading">
+    <h1 id="confirm-heading">E-posta doğrulama</h1>
+
+    @if (Model.Error is not null)
+    {
+        <div class="alert alert-error" role="alert">@Model.Error</div>
+        <p class="auth-links"><a href="/Account/ResendConfirmation">Yeni doğrulama bağlantısı iste</a></p>
+    }
+    else
+    {
+        <p>Hesabını etkinleştirmek için aşağıdaki düğmeye bas.</p>
+        <form method="post" class="form" data-busy-form>
+            <input type="hidden" asp-for="Uid">
+            <input type="hidden" asp-for="Token">
+            <button type="submit" class="btn btn-primary btn-block" data-busy-text="Doğrulanıyor…">E-postamı doğrula</button>
+        </form>
+    }
+</section>

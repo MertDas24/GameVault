@@ -1,0 +1,32 @@
+@page
+@model GameVault.Web.Pages.IndexModel
+@{
+    ViewData["Title"] = null;
+}
+<section class="hero" aria-labelledby="hero-heading">
+    <h1 id="hero-heading">Oyun koleksiyonun, <span class="accent">tek kasada.</span></h1>
+    <p class="hero-lead">Game Vault ile sahip olduğun ve oynamak istediğin oyunları kaydet; durumlarını, oynama sürelerini, puanlarını ve notlarını takip et.</p>
+    <div class="hero-actions">
+        <a class="btn btn-primary btn-lg" href="/Account/Register">Ücretsiz hesap oluştur</a>
+        <a class="btn btn-secondary btn-lg" href="/Account/Login">Giriş yap</a>
+    </div>
+</section>
+
+<section class="features" aria-label="Özellikler">
+    <div class="feature">
+        <h2>Kişisel kütüphane</h2>
+        <p>Platform, tür, durum, süre, puan ve notlarla her oyunu kaydet. Verilerin yalnızca sana görünür.</p>
+    </div>
+    <div class="feature">
+        <h2>Ara, filtrele, sırala</h2>
+        <p>Oynadıklarını, bitirdiklerini ve istek listeni saniyeler içinde bul.</p>
+    </div>
+    <div class="feature">
+        <h2>Kendi istatistiklerin</h2>
+        <p>Toplam oynama süreni, tamamlama oranını ve en sevdiğin türleri gör.</p>
+    </div>
+    <div class="feature">
+        <h2>Verilerin senin</h2>
+        <p>Tüm verilerini JSON olarak dışa aktarabilir, hesabını istediğin zaman silebilirsin.</p>
+    </div>
+</section>

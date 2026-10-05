@@ -1,0 +1,35 @@
+@page
+@model GameVault.Web.Pages.Account.ResendConfirmationModel
+@{
+    ViewData["Title"] = "Doğrulama bağlantısını yeniden gönder";
+}
+<section class="auth-card" aria-labelledby="resend-heading">
+    <h1 id="resend-heading">Doğrulama bağlantısını yeniden gönder</h1>
+
+    @if (Model.Sent)
+    {
+        <div class="alert alert-success" role="status">
+            Bu adrese ait doğrulanmamış bir hesap varsa yeni bir doğrulama bağlantısı gönderdik. Bağlantı 24 saat geçerlidir.
+        </div>
+        <p class="auth-links"><a href="/Account/Login">Girişe dön</a></p>
+    }
+    else
+    {
+        <p class="muted">Hesabını oluştururken kullandığın e-posta adresini gir.</p>
+
+        @if (Model.Error is not null)
+        {
+            <div class="alert alert-error" role="alert">@Model.Error</div>
+        }
+
+        <form method="post" class="form" data-busy-form novalidate>
+            <div class="field">
+                <label asp-for="Input.Email">E-posta</label>
+                <input asp-for="Input.Email" type="email" autocomplete="email" required maxlength="256" autofocus>
+                <span asp-validation-for="Input.Email" id="Input_Email-error" class="field-error"></span>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" data-busy-text="Gönderiliyor…">Bağlantıyı gönder</button>
+        </form>
+        <p class="auth-links"><a href="/Account/Login">Girişe dön</a></p>
+    }
+</section>

@@ -1,0 +1,58 @@
+# --- Derleme çıktıları ---
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+TestResults/
+*.trx
+coverage*/
+e2e-artifacts/
+efbundle
+efbundle.exe
+publish/
+artifacts/
+
+# --- IDE ---
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.user
+*.suo
+*.userprefs
+*.swp
+
+# --- Sırlar ve yerel yapılandırma (asla depoya eklemeyin) ---
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.p12
+*.key
+*.pem
+
+# --- Veritabanı dökümleri ve yedekleri ---
+*.bak
+*.bacpac
+*.mdf
+*.ldf
+
+# --- Eski JWT API ---
+# Eski kod 2026-09-28'de silindi. Klasör yeniden oluşursa (ör. eski bir kopyadan) depoya girmesin:
+# eski Program.cs imzalama anahtarına çok benzeyen bir değer içeriyordu.
+GameVault.API/
+
+# --- Sertifikalar, yedekler, yerel veritabanları ---
+*.cer
+*.crt
+*.snk
+*.sqlite
+*.db
+backup*/
+*.original-backup*/
+
+# --- İşletim sistemi ---
+.DS_Store
+Thumbs.db

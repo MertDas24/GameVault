@@ -1,0 +1,148 @@
+@model GameVault.Web.Pages.Library.GameFormPageModel
+@inject CoverPolicy Covers
+@{
+    var input = Model.Input;
+    string? ErrorId(string key) => ViewData.ModelState.TryGetValue(key, out var e) && e.Errors.Count > 0 ? key.Replace('.', '_') + "-error" : null;
+}
+
+<div asp-validation-summary="ModelOnly" class="alert alert-error" role="alert"></div>
+
+<div class="form-grid">
+    <div class="form-main">
+        <div class="field">
+            <label asp-for="Input.Title">Oyun adı</label>
+            <input asp-for="Input.Title" required maxlength="200" autocomplete="off">
+            <span asp-validation-for="Input.Title" id="Input_Title-error" class="field-error"></span>
+        </div>
+
+        <div class="field-row">
+            <div class="field">
+                <label asp-for="Input.PlatformId">Platform</label>
+                <select asp-for="Input.PlatformId" required>
+                    <option value="">Platform seç…</option>
+                    @foreach (var p in Model.Platforms)
+                    {
+                        <option value="@p.Id" selected="@(input.PlatformId == p.Id)">@p.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="Input.PlatformId" id="Input_PlatformId-error" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Input.Status">Durum</label>
+                <select asp-for="Input.Status" required>
+                    @foreach (var s in StatusLabels.Ordered)
+                    {
+                        <option value="@s" selected="@(input.Status == s)">@StatusLabels.Label(s)</option>
+                    }
+                </select>
+                <span asp-validation-for="Input.Status" id="Input_Status-error" class="field-error"></span>
+            </div>
+        </div>
+
+        <fieldset class="field" aria-describedby="@(ErrorId("Input.GenreIds") ?? "genre-hint")">
+            <legend>Türler <span class="optional">(en fazla 5)</span></legend>
+            <p id="genre-hint" class="visually-hidden">En fazla beş tür seçebilirsin.</p>
+            <div class="chip-group">
+                @foreach (var g in Model.Genres)
+                {
+                    <label class="chip">
+                        <input type="checkbox" name="Input.GenreIds" value="@g.Id" checked="@input.GenreIds.Contains(g.Id)">
+                        <span>@g.Name</span>
+                    </label>
+                }
+            </div>
+            <span asp-validation-for="Input.GenreIds" id="Input_GenreIds-error" class="field-error"></span>
+        </fieldset>
+
+        <div class="field-row">
+            <div class="field">
+                <label asp-for="Input.PlaytimeHours">Oynama süresi (saat)</label>
+                <input asp-for="Input.PlaytimeHours" type="number" min="0" max="100000" step="1" inputmode="numeric">
+                <span asp-validation-for="Input.PlaytimeHours" id="Input_PlaytimeHours-error" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Input.Rating">Kişisel puan</label>
+                <select asp-for="Input.Rating">
+                    <option value="">Puan yok</option>
+                    @for (var i = 10; i >= 1; i--)
+                    {
+                        <option value="@i" selected="@(input.Rating == i)">@i / 10</option>
+                    }
+                </select>
+                <span asp-validation-for="Input.Rating" id="Input_Rating-error" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="field-row">
+            <div class="field">
+                <label asp-for="Input.StartDate">Başlama tarihi</label>
+                <input asp-for="Input.StartDate" type="date" min="1970-01-01">
+                <span asp-validation-for="Input.StartDate" id="Input_StartDate-error" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Input.CompletionDate">Bitirme tarihi</label>
+                <input asp-for="Input.CompletionDate" type="date" min="1970-01-01">
+                <span asp-validation-for="Input.CompletionDate" id="Input_CompletionDate-error" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="field">
+            <label asp-for="Input.Description">Açıklama</label>
+            <textarea asp-for="Input.Description" rows="4" maxlength="4000"></textarea>
+            <span asp-validation-for="Input.Description" id="Input_Description-error" class="field-error"></span>
+        </div>
+
+        <div class="field">
+            <label asp-for="Input.Notes">Kişisel notlar</label>
+            <textarea asp-for="Input.Notes" rows="4" maxlength="4000"></textarea>
+            <p class="hint">Notlar düz metin olarak saklanır ve gösterilir; HTML yorumlanmaz.</p>
+            <span asp-validation-for="Input.Notes" id="Input_Notes-error" class="field-error"></span>
+        </div>
+
+        <div class="field field-check">
+            <input asp-for="Input.IsFavorite">
+            <label asp-for="Input.IsFavorite">Favorilerime ekle</label>
+        </div>
+    </div>
+
+    <fieldset class="form-side field" aria-describedby="@(ErrorId("Input.CoverChoice") ?? ErrorId("Input.CoverUrl"))">
+        <legend>Kapak</legend>
+        <div class="cover-picker" data-cover-picker>
+            <label class="cover-option">
+                <input type="radio" name="Input.CoverChoice" value="@CoverChoices.None" checked="@(input.CoverChoice == CoverChoices.None)">
+                <span class="cover-option-none">Kapak yok</span>
+            </label>
+            @foreach (var c in CoverPolicy.BuiltIn)
+            {
+                var value = CoverChoices.BuiltInPrefix + c.Key;
+                <label class="cover-option">
+                    <input type="radio" name="Input.CoverChoice" value="@value" checked="@(input.CoverChoice == value)">
+                    <img src="@c.Path" alt="" width="60" height="80">
+                    <span class="visually-hidden">@c.Name</span>
+                </label>
+            }
+            @if (Covers.AllowedHosts.Count > 0)
+            {
+                <label class="cover-option">
+                    <input type="radio" name="Input.CoverChoice" value="@CoverChoices.Url" checked="@(input.CoverChoice == CoverChoices.Url)">
+                    <span class="cover-option-none">Adres</span>
+                </label>
+            }
+        </div>
+        <span asp-validation-for="Input.CoverChoice" id="Input_CoverChoice-error" class="field-error"></span>
+
+        @if (Covers.AllowedHosts.Count > 0)
+        {
+            <div class="field" data-cover-url>
+                <label asp-for="Input.CoverUrl">Görsel adresi (https)</label>
+                <input asp-for="Input.CoverUrl" type="url" maxlength="500" inputmode="url" aria-describedby="cover-url-hint">
+                <p id="cover-url-hint" class="hint">İzin verilen alan adları: @string.Join(", ", Covers.AllowedHosts). Görsel sunucumuz tarafından indirilmez.</p>
+                <span asp-validation-for="Input.CoverUrl" id="Input_CoverUrl-error" class="field-error"></span>
+            </div>
+        }
+        else
+        {
+            <p class="hint">Bu kurulumda yalnızca hazır kapaklar kullanılabilir.</p>
+        }
+    </fieldset>
+</div>

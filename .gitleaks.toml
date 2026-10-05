@@ -1,0 +1,21 @@
+# gitleaks yapılandırması: varsayılan kurallar + bu depoya özgü ek kural.
+[extend]
+useDefault = true
+
+# Varsayılan kurallar anahtar adı içermeyen (ör. bir "Description" alanına yapıştırılmış) base64 imzalama
+# anahtarlarını kaçırabiliyor. Yüksek entropili, uzun base64 dizelerini yakalar. Onaltılık commit SHA'ları ve
+# sağlama toplamları entropi eşiğinin altında kalır.
+[[rules]]
+id = "high-entropy-base64-literal"
+description = "Uzun, yüksek entropili base64 dizesi (olası imzalama anahtarı)"
+regex = '''["']\s*([A-Za-z0-9+/]{43,}\s*={0,2})\s*["']'''
+secretGroup = 1
+entropy = 4.6
+
+[allowlist]
+description = "Üretilmiş ya da üçüncü taraf dosyalar"
+paths = [
+  '''(^|/)packages\.lock\.json$''',
+  '''(^|/)(bin|obj)/''',
+  '''(^|/)\.vs/''',
+]

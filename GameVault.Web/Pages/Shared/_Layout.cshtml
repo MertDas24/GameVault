@@ -1,0 +1,90 @@
+@{
+    var authed = User.Identity?.IsAuthenticated == true;
+    var section = ViewData["Section"] as string;
+    var title = ViewData["Title"] as string;
+    string? Current(string name) => section == name ? "page" : null;
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="referrer" content="same-origin">
+    <title>@(title is null ? "Game Vault" : $"{title} · Game Vault")</title>
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+    <script src="~/js/site.js" asp-append-version="true" defer></script>
+</head>
+<body class="@(authed ? "layout-app" : "layout-public")">
+    <a class="skip-link" href="#main">İçeriğe geç</a>
+
+    @if (authed)
+    {
+        <aside class="sidebar">
+            <a class="brand" href="/Library">
+                <partial name="_Logo" />
+                <span>Game Vault</span>
+            </a>
+            <nav aria-label="Ana menü">
+                <ul class="nav-list">
+                    <li><a href="/Library" aria-current="@Current("library")"><partial name="_Icon" model="@("library")" /> Kütüphane</a></li>
+                    <li><a href="/Library/New" aria-current="@Current("new")"><partial name="_Icon" model="@("plus")" /> Oyun ekle</a></li>
+                    <li><a href="/Stats" aria-current="@Current("stats")"><partial name="_Icon" model="@("chart")" /> İstatistikler</a></li>
+                    <li><a href="/Account/Settings" aria-current="@Current("account")"><partial name="_Icon" model="@("user")" /> Hesap</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <p class="sidebar-user" title="@Display.UserLabel(User)">@Display.UserLabel(User)</p>
+                <form method="post" asp-page="/Account/Logout">
+                    <button type="submit" class="btn btn-ghost btn-block">Çıkış yap</button>
+                </form>
+            </div>
+        </aside>
+
+        <header class="topbar">
+            <a class="brand" href="/Library">
+                <partial name="_Logo" />
+                <span>Game Vault</span>
+            </a>
+            <form method="post" asp-page="/Account/Logout">
+                <button type="submit" class="btn btn-ghost btn-sm">Çıkış</button>
+            </form>
+        </header>
+    }
+    else
+    {
+        <header class="public-header">
+            <a class="brand" href="/">
+                <partial name="_Logo" />
+                <span>Game Vault</span>
+            </a>
+            <nav aria-label="Hesap">
+                <a class="btn btn-ghost btn-sm" href="/Account/Login">Giriş yap</a>
+                <a class="btn btn-primary btn-sm" href="/Account/Register">Kayıt ol</a>
+            </nav>
+        </header>
+    }
+
+    <main id="main" class="main" tabindex="-1">
+        <partial name="_Flash" />
+        @RenderBody()
+    </main>
+
+    @if (authed)
+    {
+        <nav class="bottom-nav" aria-label="Mobil menü">
+            <a href="/Library" aria-current="@Current("library")"><partial name="_Icon" model="@("library")" /><span>Kütüphane</span></a>
+            <a href="/Library/New" aria-current="@Current("new")"><partial name="_Icon" model="@("plus")" /><span>Ekle</span></a>
+            <a href="/Stats" aria-current="@Current("stats")"><partial name="_Icon" model="@("chart")" /><span>İstatistik</span></a>
+            <a href="/Account/Settings" aria-current="@Current("account")"><partial name="_Icon" model="@("user")" /><span>Hesap</span></a>
+        </nav>
+    }
+    else
+    {
+        <footer class="public-footer">
+            <a href="/Privacy">Gizlilik</a>
+        </footer>
+    }
+</body>
+</html>

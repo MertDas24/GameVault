@@ -1,0 +1,158 @@
+@page "/Library"
+@model GameVault.Web.Pages.Library.IndexModel
+@{
+    ViewData["Title"] = "Kütüphane";
+    ViewData["Section"] = "library";
+    var q = Model.Query;
+    var r = Model.Result;
+    var sortOptions = new (string Key, string Label)[]
+    {
+        ("added_desc", "Son eklenen"), ("added_asc", "İlk eklenen"), ("title_asc", "Ada göre (A→Z)"),
+        ("title_desc", "Ada göre (Z→A)"), ("rating_desc", "Puana göre"), ("playtime_desc", "Oynama süresine göre"),
+        ("updated_desc", "Son güncellenen")
+    };
+}
+<header class="page-header">
+    <div>
+        <h1>Kütüphane</h1>
+        <p class="muted">@(Model.LibraryTotal == 0 ? "Henüz oyun eklemedin." : $"Toplam {Display.Number(Model.LibraryTotal)} oyun")</p>
+    </div>
+    <a class="btn btn-primary" href="/Library/New"><partial name="_Icon" model="@("plus")" /> Oyun ekle</a>
+</header>
+
+@if (Model.LibraryTotal == 0)
+{
+    <section class="empty-state" aria-labelledby="empty-heading">
+        <partial name="_Icon" model="@("library")" />
+        <h2 id="empty-heading">Kütüphanen boş</h2>
+        <p>İlk oyununu ekleyerek koleksiyonunu oluşturmaya başla.</p>
+        <a class="btn btn-primary" href="/Library/New">İlk oyununu ekle</a>
+    </section>
+}
+else
+{
+    <form method="get" action="/Library" class="filters" role="search" aria-label="Kütüphanede ara ve filtrele">
+        <div class="field filter-search">
+            <label for="f-q">Ara</label>
+            <div class="input-icon">
+                <partial name="_Icon" model="@("search")" />
+                <input id="f-q" name="q" type="search" value="@q.Search" maxlength="@LibraryQuery.MaxSearchLength" placeholder="Oyun adı…">
+            </div>
+        </div>
+        <details class="filter-details" data-filter-details open="@(q.HasFilters || q.Sort != LibrarySort.AddedDesc)">
+        <summary class="btn btn-secondary">Filtre ve sıralama</summary>
+        <div class="filter-body">
+        <div class="field">
+            <label for="f-status">Durum</label>
+            <select id="f-status" name="status">
+                <option value="">Tümü</option>
+                @foreach (var s in StatusLabels.Ordered)
+                {
+                    <option value="@StatusLabels.Key(s)" selected="@(q.Status == s)">@StatusLabels.Label(s)</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label for="f-platform">Platform</label>
+            <select id="f-platform" name="platform">
+                <option value="">Tümü</option>
+                @foreach (var p in Model.Platforms)
+                {
+                    <option value="@p.Id" selected="@(q.PlatformId == p.Id)">@p.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label for="f-genre">Tür</label>
+            <select id="f-genre" name="genre">
+                <option value="">Tümü</option>
+                @foreach (var g in Model.Genres)
+                {
+                    <option value="@g.Id" selected="@(q.GenreId == g.Id)">@g.Name</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label for="f-sort">Sırala</label>
+            <select id="f-sort" name="sort">
+                @foreach (var (key, label) in sortOptions)
+                {
+                    <option value="@key" selected="@(q.SortKey == key)">@label</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label for="f-size">Sayfa başına</label>
+            <select id="f-size" name="size">
+                @foreach (var size in LibraryQuery.AllowedPageSizes)
+                {
+                    <option value="@size" selected="@(q.PageSize == size)">@size</option>
+                }
+            </select>
+        </div>
+        <div class="field field-check filter-fav">
+            <input id="f-fav" name="fav" type="checkbox" value="1" checked="@q.FavoritesOnly">
+            <label for="f-fav">Yalnızca favoriler</label>
+        </div>
+        </div>
+        </details>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-secondary">Uygula</button>
+            @if (q.HasFilters || q.Sort != LibrarySort.AddedDesc)
+            {
+                <a class="btn btn-ghost" href="/Library">Temizle</a>
+            }
+        </div>
+    </form>
+
+    <p class="result-count" role="status">
+        @if (r.TotalCount == 0)
+        {
+            <text>Bu filtrelere uyan oyun bulunamadı.</text>
+        }
+        else
+        {
+            <text>@Display.Number(r.TotalCount) sonuç · Sayfa @r.Page / @r.TotalPages</text>
+        }
+    </p>
+
+    @if (r.TotalCount == 0)
+    {
+        <section class="empty-state empty-state-compact">
+            <p>Aramanı değiştirmeyi ya da filtreleri temizlemeyi dene.</p>
+            <a class="btn btn-secondary" href="/Library">Filtreleri temizle</a>
+        </section>
+    }
+    else
+    {
+        <div class="card-grid">
+            @foreach (var game in r.Items)
+            {
+                <partial name="_GameCard" model="@(new GameCardView(game, Model.CurrentUrl))" />
+            }
+        </div>
+
+        @if (r.TotalPages > 1)
+        {
+            <nav class="pagination" aria-label="Sayfalar">
+                @if (r.HasPrevious)
+                {
+                    <a class="btn btn-secondary" href="@Model.PageUrl(r.Page - 1)" rel="prev">← Önceki</a>
+                }
+                else
+                {
+                    <span class="btn btn-secondary" aria-disabled="true">← Önceki</span>
+                }
+                <span class="pagination-info">Sayfa @r.Page / @r.TotalPages</span>
+                @if (r.HasNext)
+                {
+                    <a class="btn btn-secondary" href="@Model.PageUrl(r.Page + 1)" rel="next">Sonraki →</a>
+                }
+                else
+                {
+                    <span class="btn btn-secondary" aria-disabled="true">Sonraki →</span>
+                }
+            </nav>
+        }
+    }
+}

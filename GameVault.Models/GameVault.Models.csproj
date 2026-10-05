@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\GameVault.Entities\GameVault.Entities.csproj" />
+  </ItemGroup>
+
+</Project>

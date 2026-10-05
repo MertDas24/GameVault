@@ -1,0 +1,84 @@
+@page
+@inject Display Fmt
+@model GameVault.Web.Pages.Account.SettingsModel
+@{
+    ViewData["Title"] = "Hesap ayarları";
+    ViewData["Section"] = "account";
+}
+<header class="page-header">
+    <div>
+        <h1>Hesap ayarları</h1>
+        <p class="muted">@Model.Email · Üyelik: @Fmt.Date(Model.CreatedAtUtc)</p>
+    </div>
+</header>
+
+<div class="settings-grid">
+    <section class="panel" aria-labelledby="profile-heading">
+        <h2 id="profile-heading">Profil</h2>
+        <form method="post" asp-page-handler="Profile" class="form" data-busy-form novalidate>
+            <div class="field">
+                <label asp-for="Profile.DisplayName">Görünen ad</label>
+                <input asp-for="Profile.DisplayName" maxlength="50" autocomplete="nickname">
+                <p class="hint">Yalnızca sana gösterilir. Boş bırakırsan e-posta adresin kullanılır.</p>
+                <span asp-validation-for="Profile.DisplayName" id="Profile_DisplayName-error" class="field-error"></span>
+            </div>
+            <div class="field">
+                <span class="label">E-posta</span>
+                <p class="static-value">@Model.Email</p>
+                <p class="hint">E-posta değişikliği bu sürümde desteklenmiyor.</p>
+            </div>
+            <button type="submit" class="btn btn-primary" data-busy-text="Kaydediliyor…">Profili kaydet</button>
+        </form>
+    </section>
+
+    <section class="panel" aria-labelledby="password-heading">
+        <h2 id="password-heading">Parola değiştir</h2>
+        <form method="post" asp-page-handler="Password" class="form" data-busy-form novalidate>
+            <input type="text" name="username" value="@Model.Email" autocomplete="username" hidden>
+            <div class="field">
+                <label asp-for="Password.CurrentPassword">Mevcut parola</label>
+                <input asp-for="Password.CurrentPassword" autocomplete="current-password" required maxlength="256">
+                <span asp-validation-for="Password.CurrentPassword" id="Password_CurrentPassword-error" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Password.NewPassword">Yeni parola</label>
+                <input asp-for="Password.NewPassword" autocomplete="new-password" required minlength="10" maxlength="128">
+                <span asp-validation-for="Password.NewPassword" id="Password_NewPassword-error" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Password.ConfirmPassword">Yeni parola (tekrar)</label>
+                <input asp-for="Password.ConfirmPassword" autocomplete="new-password" required maxlength="128">
+                <span asp-validation-for="Password.ConfirmPassword" id="Password_ConfirmPassword-error" class="field-error"></span>
+            </div>
+            <p class="hint">Parolan değişince diğer cihazlardaki oturumların kapatılır.</p>
+            <button type="submit" class="btn btn-primary" data-busy-text="Güncelleniyor…">Parolayı değiştir</button>
+        </form>
+    </section>
+
+    <section class="panel" aria-labelledby="sessions-heading">
+        <h2 id="sessions-heading">Oturumlar</h2>
+        <p>Etkin oturum sayısı: <strong>@Model.ActiveSessions</strong> (bu cihaz dahil).</p>
+        <form method="post" asp-page-handler="SignOutOthers">
+            <button type="submit" class="btn btn-secondary">Diğer tüm oturumları kapat</button>
+        </form>
+    </section>
+
+    <section class="panel" aria-labelledby="data-heading">
+        <h2 id="data-heading">Verilerin</h2>
+        <p>Profilini ve tüm kütüphaneni JSON dosyası olarak indirebilirsin.</p>
+        <p><a class="btn btn-secondary" href="/Account/Export"><partial name="_Icon" model="@("download")" /> Verilerimi dışa aktar</a></p>
+    </section>
+
+    <section class="panel panel-danger" aria-labelledby="danger-heading">
+        <h2 id="danger-heading">Hesabı sil</h2>
+        <p>Hesabın ve tüm oyun kayıtların kalıcı olarak silinir. Bu işlem geri alınamaz.</p>
+        <p><a class="btn btn-danger" href="/Account/Delete"><partial name="_Icon" model="@("trash")" /> Hesabımı sil…</a></p>
+    </section>
+
+    <section class="panel mobile-only" aria-labelledby="logout-heading">
+        <h2 id="logout-heading">Oturum</h2>
+        <form method="post" asp-page="/Account/Logout">
+            <button type="submit" class="btn btn-secondary">Çıkış yap</button>
+        </form>
+    </section>
+</div>

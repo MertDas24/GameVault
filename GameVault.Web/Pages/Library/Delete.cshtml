@@ -1,0 +1,15 @@
+@page "/Library/{id:guid}/Delete"
+@model GameVault.Web.Pages.Library.DeleteModel
+@{
+    ViewData["Title"] = "Oyunu sil";
+    ViewData["Section"] = "library";
+}
+<a class="back-link" href="/Library/@Model.Game.Id"><partial name="_Icon" model="@("back")" /> Oyun ayrıntısı</a>
+<section class="panel panel-danger narrow" aria-labelledby="delete-heading">
+    <h1 id="delete-heading">Oyunu sil</h1>
+    <p><strong class="break-anywhere">“@Model.Game.Title”</strong> kütüphanenden kalıcı olarak silinecek. Puanın, notların ve oynama süren de silinir. Bu işlem geri alınamaz.</p>
+    <form method="post" class="form-actions" data-busy-form>
+        <a class="btn btn-ghost" href="/Library/@Model.Game.Id" autofocus>Vazgeç</a>
+        <button type="submit" class="btn btn-danger" data-busy-text="Siliniyor…">Evet, sil</button>
+    </form>
+</section>

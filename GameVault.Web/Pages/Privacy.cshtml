@@ -1,0 +1,29 @@
+@page
+@model GameVault.Web.Pages.PrivacyModel
+@{
+    ViewData["Title"] = "Gizlilik";
+}
+<article class="panel narrow prose-page">
+    <h1>Gizlilik</h1>
+    <p class="muted">Bu metin, uygulamanın bu sürümde teknik olarak ne yaptığını açıklar; hukuki bir aydınlatma metni değildir. Uygulamayı yayınlayan kişi ya da kurum, kendi yükümlülüklerine uygun bir metin hazırlamalıdır.</p>
+
+    <h2>Saklanan veriler</h2>
+    <ul>
+        <li>Hesap: e-posta adresi, isteğe bağlı görünen ad, parolanın tek yönlü özeti (PBKDF2), kayıt tarihi ve hesap güvenliği alanları (başarısız giriş sayacı, kilit süresi).</li>
+        <li>Kütüphane: eklediğin oyunlar ve girdiğin tüm alanlar (ad, açıklama, kapak adresi, platform, tür, durum, süre, puan, notlar, tarihler).</li>
+        <li>Oturumlar: giriş yaptığın her tarayıcı için sunucuda bir oturum kaydı (süresi dolunca ya da çıkış yapınca silinir).</li>
+        <li>Kötüye kullanım önleme: giriş ve benzeri işlemler için IP adresinin ve e-postanın tek yönlü özetiyle tutulan kısa ömürlü sayaçlar.</li>
+    </ul>
+
+    <h2>Çerezler</h2>
+    <p>Yalnızca işlevsel çerezler kullanılır: oturum çerezi, form güvenliği (CSRF) çerezi ve bir sonraki sayfada bilgi mesajı göstermek için geçici bir çerez. Reklam ya da analiz çerezi yoktur.</p>
+
+    <h2>Üçüncü taraflar</h2>
+    <p>Uygulama harici bir oyun veritabanına bağlanmaz. Parola sıfırlama e-postaları, uygulamayı işleten tarafın yapılandırdığı e-posta sağlayıcısı üzerinden gönderilir. Kurulum harici kapak görsellerine izin veriyorsa, bu görseller tarayıcın tarafından doğrudan ilgili siteden yüklenir.</p>
+
+    <h2>Haklarını kullanma</h2>
+    <ul>
+        <li><strong>Dışa aktarma:</strong> Hesap ayarlarından tüm verilerini JSON olarak indirebilirsin.</li>
+        <li><strong>Silme:</strong> Hesap ayarlarından hesabını ve tüm verilerini kalıcı olarak silebilirsin. Silinen veriler uygulamadan hemen kaldırılır; veritabanı yedeklerinde, işletmecinin yedek saklama süresi boyunca kalabilir.</li>
+    </ul>
+</article>

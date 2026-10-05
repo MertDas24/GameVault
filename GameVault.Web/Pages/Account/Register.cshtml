@@ -1,0 +1,56 @@
+@page
+@model GameVault.Web.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Kayıt ol";
+}
+<section class="auth-card" aria-labelledby="register-heading">
+    @if (Model.Submitted)
+    {
+        <h1 id="register-heading">E-postanı kontrol et</h1>
+        <div class="alert alert-success" role="status">
+            Kaydını aldık ve girdiğin adrese bir e-posta gönderdik. Hesabını etkinleştirmek için e-postadaki
+            bağlantıyı 24 saat içinde aç. Bu adres zaten kayıtlıysa, hesabınla ilgili bir bilgilendirme e-postası alırsın.
+        </div>
+        <p class="muted">E-posta gelmediyse istenmeyen klasörünü kontrol et ya da
+            <a href="/Account/ResendConfirmation">doğrulama bağlantısını yeniden gönder</a>.</p>
+        <p class="auth-links"><a href="/Account/Login">Girişe git</a></p>
+    }
+    else
+    {
+        <h1 id="register-heading">Hesap oluştur</h1>
+        <p class="muted">Oyun koleksiyonunu tek yerde topla.</p>
+
+        @if (Model.Error is not null)
+        {
+            <div class="alert alert-error" role="alert">@Model.Error</div>
+        }
+        <div asp-validation-summary="ModelOnly" class="alert alert-error" role="alert"></div>
+
+        <form method="post" class="form" data-busy-form novalidate>
+            <div class="field">
+                <label asp-for="Input.Email">E-posta</label>
+                <input asp-for="Input.Email" type="email" autocomplete="email" required maxlength="256" autofocus>
+                <span asp-validation-for="Input.Email" id="Input_Email-error" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Input.DisplayName">Görünen ad <span class="optional">(isteğe bağlı)</span></label>
+                <input asp-for="Input.DisplayName" autocomplete="nickname" maxlength="50">
+                <span asp-validation-for="Input.DisplayName" id="Input_DisplayName-error" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Input.Password">Parola</label>
+                <input asp-for="Input.Password" autocomplete="new-password" required minlength="10" maxlength="128" aria-describedby="password-hint">
+                <p id="password-hint" class="hint">En az 10 karakter. Uzun bir parola cümlesi tercih et.</p>
+                <span asp-validation-for="Input.Password" id="Input_Password-error" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Input.ConfirmPassword">Parola (tekrar)</label>
+                <input asp-for="Input.ConfirmPassword" autocomplete="new-password" required maxlength="128">
+                <span asp-validation-for="Input.ConfirmPassword" id="Input_ConfirmPassword-error" class="field-error"></span>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" data-busy-text="Hesap oluşturuluyor…">Kayıt ol</button>
+        </form>
+
+        <p class="auth-links">Zaten hesabın var mı? <a href="/Account/Login">Giriş yap</a></p>
+    }
+</section>

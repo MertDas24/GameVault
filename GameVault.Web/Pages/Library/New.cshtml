@@ -1,0 +1,18 @@
+@page "/Library/New"
+@model GameVault.Web.Pages.Library.NewModel
+@{
+    ViewData["Title"] = "Oyun ekle";
+    ViewData["Section"] = "new";
+}
+<a class="back-link" href="/Library"><partial name="_Icon" model="@("back")" /> Kütüphane</a>
+<header class="page-header">
+    <h1>Oyun ekle</h1>
+</header>
+
+<form method="post" class="form panel" data-busy-form novalidate>
+    <partial name="_GameForm" model="Model" />
+    <div class="form-actions">
+        <a class="btn btn-ghost" href="/Library">Vazgeç</a>
+        <button type="submit" class="btn btn-primary" data-busy-text="Kaydediliyor…">Kütüphaneye ekle</button>
+    </div>
+</form>

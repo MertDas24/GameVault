@@ -1,0 +1,34 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/node_modules/
+.git/
+.github/
+tests/
+docs/
+tools/
+**/e2e-artifacts/
+**/TestResults/
+# Eski JWT API (silindi; yeniden oluşursa imaja girmesin)
+GameVault.API/
+
+# Sırlar, sertifikalar, yedekler ve yerel veritabanları imaj bağlamına asla girmez.
+.env
+.env.*
+**/secrets.json
+**/appsettings.*.local.json
+**/*.pfx
+**/*.p12
+**/*.key
+**/*.pem
+**/*.cer
+**/*.crt
+**/*.bak
+**/*.bacpac
+**/*.mdf
+**/*.ldf
+**/*.db
+**/*.sqlite

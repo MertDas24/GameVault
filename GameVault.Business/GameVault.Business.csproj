@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="MailKit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GameVault.DataAccess\GameVault.DataAccess.csproj" />
+    <ProjectReference Include="..\GameVault.Entities\GameVault.Entities.csproj" />
+    <ProjectReference Include="..\GameVault.Models\GameVault.Models.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="GameVault.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,44 @@
+name: Hata bildirimi
+description: Beklendiği gibi çalışmayan bir şeyi bildirin.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Güvenlik açıklarını burada bildirmeyin.** Bunun yerine SECURITY.md dosyasındaki özel bildirim yolunu kullanın.
+        Parola, token, bağlantı dizesi ya da kişisel veri paylaşmayın.
+  - type: textarea
+    id: what
+    attributes:
+      label: Ne oldu?
+      description: Gözlemlediğiniz davranış.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ne bekliyordunuz?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Yeniden üretme adımları
+      placeholder: |
+        1. ... sayfasına git
+        2. ... düğmesine tıkla
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Sürüm / commit
+  - type: input
+    id: env
+    attributes:
+      label: Tarayıcı ve işletim sistemi
+  - type: textarea
+    id: logs
+    attributes:
+      label: İlgili loglar (hassas bilgiler temizlenmiş olarak)
+      render: text

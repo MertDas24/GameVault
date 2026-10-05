@@ -1,0 +1,42 @@
+@page
+@model GameVault.Web.Pages.Account.DeleteModel
+@{
+    ViewData["Title"] = "Hesabı sil";
+    ViewData["Section"] = "account";
+}
+<a class="back-link" href="/Account/Settings"><partial name="_Icon" model="@("back")" /> Hesap ayarları</a>
+<section class="panel panel-danger narrow" aria-labelledby="delete-heading">
+    <h1 id="delete-heading">Hesabı kalıcı olarak sil</h1>
+    <p>Bu işlem <strong>geri alınamaz</strong>. Silinecekler:</p>
+    <ul class="plain-list">
+        <li>Hesabın ve profil bilgilerin</li>
+        <li>Kütüphanendeki <strong>@Model.GameCount</strong> oyun ve tüm notların</li>
+        <li>Tüm cihazlardaki açık oturumların</li>
+    </ul>
+    <p>Önce <a href="/Account/Export">verilerini dışa aktarmak</a> isteyebilirsin.</p>
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-error" role="alert"></div>
+
+    <form method="post" class="form" data-busy-form novalidate>
+        <input type="text" name="username" value="@User.FindFirstValue(ClaimTypes.Email)" autocomplete="username" hidden>
+        <div class="field">
+            <label asp-for="Input.Password">Parola</label>
+            <input asp-for="Input.Password" autocomplete="current-password" required maxlength="256">
+            <span asp-validation-for="Input.Password" id="Input_Password-error" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.ConfirmEmail">Onay için e-posta adresini yaz</label>
+            <input asp-for="Input.ConfirmEmail" type="email" autocomplete="off" required maxlength="256">
+            <span asp-validation-for="Input.ConfirmEmail" id="Input_ConfirmEmail-error" class="field-error"></span>
+        </div>
+        <div class="field field-check">
+            <input asp-for="Input.Acknowledge" required>
+            <label asp-for="Input.Acknowledge">Bu işlemin geri alınamayacağını anlıyorum</label>
+        </div>
+        <span asp-validation-for="Input.Acknowledge" id="Input_Acknowledge-error" class="field-error"></span>
+        <div class="form-actions">
+            <a class="btn btn-ghost" href="/Account/Settings">Vazgeç</a>
+            <button type="submit" class="btn btn-danger" data-busy-text="Siliniyor…">Hesabımı kalıcı olarak sil</button>
+        </div>
+    </form>
+</section>

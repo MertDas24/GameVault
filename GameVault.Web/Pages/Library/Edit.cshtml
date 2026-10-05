@@ -1,0 +1,18 @@
+@page "/Library/{id:guid}/Edit"
+@model GameVault.Web.Pages.Library.EditModel
+@{
+    ViewData["Title"] = "Oyunu düzenle";
+    ViewData["Section"] = "library";
+}
+<a class="back-link" href="/Library/@Model.Id"><partial name="_Icon" model="@("back")" /> Oyun ayrıntısı</a>
+<header class="page-header">
+    <h1>Oyunu düzenle</h1>
+</header>
+
+<form method="post" class="form panel" data-busy-form novalidate>
+    <partial name="_GameForm" model="Model" />
+    <div class="form-actions">
+        <a class="btn btn-ghost" href="/Library/@Model.Id">Vazgeç</a>
+        <button type="submit" class="btn btn-primary" data-busy-text="Kaydediliyor…">Değişiklikleri kaydet</button>
+    </div>
+</form>

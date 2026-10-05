@@ -1,0 +1,25 @@
+@page
+@model GameVault.Web.Pages.Account.ExportModel
+@{
+    ViewData["Title"] = "Verilerimi dışa aktar";
+    ViewData["Section"] = "account";
+}
+<a class="back-link" href="/Account/Settings"><partial name="_Icon" model="@("back")" /> Hesap ayarları</a>
+<section class="panel narrow" aria-labelledby="export-heading">
+    <h1 id="export-heading">Verilerimi dışa aktar</h1>
+    <p>İndirilecek JSON dosyası şunları içerir:</p>
+    <ul class="plain-list">
+        <li>E-posta adresin, görünen adın ve üyelik tarihin</li>
+        <li>Kütüphanendeki tüm oyunlar: ad, açıklama, kapak adresi, platform, türler, durum, puan, süre, favori, notlar ve tarihler</li>
+    </ul>
+    <p class="muted">Parola özeti, oturum bilgileri ve güvenlik damgaları dosyaya eklenmez.</p>
+
+    @if (Model.Error is not null)
+    {
+        <div class="alert alert-error" role="alert">@Model.Error</div>
+    }
+
+    <form method="post">
+        <button type="submit" class="btn btn-primary"><partial name="_Icon" model="@("download")" /> JSON olarak indir</button>
+    </form>
+</section>

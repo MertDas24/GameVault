@@ -1,0 +1,27 @@
+@model GameCardView
+<article class="card">
+    <a class="card-link" href="/Library/@Model.Game.Id">
+        <partial name="_Cover" model="@((Model.Game.Title, Model.Game.CoverImageUrl, "cover-card"))" />
+        <h3 class="card-title" title="@Model.Game.Title">@Model.Game.Title</h3>
+    </a>
+    <div class="card-meta">
+        <span class="badge status-@StatusLabels.Key(Model.Game.Status)">@StatusLabels.Label(Model.Game.Status)</span>
+        <span class="card-platform" title="@Model.Game.PlatformName">@Model.Game.PlatformName</span>
+    </div>
+    <div class="card-foot">
+        <span class="card-stats">
+            @if (Model.Game.Rating is { } rating)
+            {
+                <span><span class="visually-hidden">Puan:</span> @rating/10</span>
+            }
+            <span><span class="visually-hidden">Oynama süresi:</span> @Display.Number(Model.Game.PlaytimeHours) sa</span>
+        </span>
+        <form method="post" asp-page="/Library/Details" asp-page-handler="Favorite" asp-route-id="@Model.Game.Id" class="fav-form">
+            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl">
+            <button type="submit" class="fav-btn" aria-pressed="@(Model.Game.IsFavorite ? "true" : "false")"
+                    aria-label="@(Model.Game.IsFavorite ? "Favorilerden çıkar" : "Favorilere ekle"): @Model.Game.Title">
+                <partial name="_Icon" model="@("star")" />
+            </button>
+        </form>
+    </div>
+</article>

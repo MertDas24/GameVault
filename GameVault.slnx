@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="GameVault.Entities/GameVault.Entities.csproj" />
+    <Project Path="GameVault.DataAccess/GameVault.DataAccess.csproj" />
+    <Project Path="GameVault.Models/GameVault.Models.csproj" />
+    <Project Path="GameVault.Business/GameVault.Business.csproj" />
+    <Project Path="GameVault.Web/GameVault.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GameVault.Tests/GameVault.Tests.csproj" />
+    <Project Path="tests/GameVault.E2E/GameVault.E2E.csproj" />
+  </Folder>
+</Solution>

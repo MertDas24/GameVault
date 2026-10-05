@@ -1,0 +1,51 @@
+# Yalnızca YEREL GELİŞTİRME içindir; üretim yapılandırması değildir.
+# Kullanım:  cp .env.example .env   (değerleri düzenleyin)  &&  docker compose up --build
+# Uygulama:  http://localhost:8080   ·   Mailpit (e-posta kutusu): http://localhost:8025
+name: gamevault
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-CU27-ubuntu-22.04
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?.env dosyasında MSSQL_SA_PASSWORD tanımlayın}
+    ports:
+      - "127.0.0.1:14333:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    ports:
+      - "127.0.0.1:8025:8025"
+
+  app:
+    build:
+      context: .
+      target: runtime
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      # Development: migration'lar başlangıçta uygulanır, e-postalar Mailpit'e gider.
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=GameVaultDev;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"
+      App__PublicBaseUrl: "http://localhost:8080"
+      Email__Host: mailpit
+      Email__Port: "1025"
+      Email__Security: None
+      Email__FromAddress: no-reply@gamevault.test
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  sqldata:
