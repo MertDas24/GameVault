@@ -42,12 +42,17 @@ jobs:
           echo "::add-mask::$PW"
           docker run -d --name mssql -e ACCEPT_EULA=Y -e MSSQL_PID=Developer -e "MSSQL_SA_PASSWORD=$PW" \
             -p 1433:1433 mcr.microsoft.com/mssql/server:2022-CU27-ubuntu-22.04
+          ready=
           for i in $(seq 1 60); do
             if docker exec mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$PW" -C -Q "SELECT 1" -b -o /dev/null; then
-              echo "SQL Server hazır"; break
+              echo "SQL Server hazır"; ready=1; break
             fi
             sleep 2
           done
+          if [ -z "$ready" ]; then
+            docker logs mssql | tail -n 50
+            echo "::error::SQL Server 120 saniyede hazır olmadı."; exit 1
+          fi
           echo "GAMEVAULT_TEST_SQLSERVER=Server=localhost,1433;User Id=sa;Password=$PW;TrustServerCertificate=True" >> "$GITHUB_ENV"
 
       - name: Restore (locked)
@@ -72,13 +77,22 @@ jobs:
         run: dotnet ef migrations has-pending-model-changes --project GameVault.DataAccess --startup-project GameVault.DataAccess --no-build --configuration Release
 
       - name: Unit and integration tests
-        run: dotnet test tests/GameVault.Tests -c Release --no-build
+        run: dotnet test tests/GameVault.Tests -c Release --no-build --logger "trx;LogFileName=integration.trx" --results-directory TestResults
 
       - name: Install Playwright Chromium
         run: pwsh tests/GameVault.E2E/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
       - name: End-to-end tests
-        run: dotnet test tests/GameVault.E2E -c Release --no-build
+        run: dotnet test tests/GameVault.E2E -c Release --no-build --logger "trx;LogFileName=e2e.trx" --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results
+          path: TestResults/*.trx
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload E2E screenshots
         if: always()

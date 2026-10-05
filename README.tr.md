@@ -4,6 +4,7 @@
 
 **Kişisel oyun kütüphanesi: ne oynadığını, neyi bitirdiğini ve sırada ne olduğunu takip et.**
 
+[![CI](https://github.com/MertDas24/GameVault/actions/workflows/ci.yml/badge.svg)](https://github.com/MertDas24/GameVault/actions/workflows/ci.yml)
 ![.NET 10](https://img.shields.io/badge/.NET_10-512BD4?logo=dotnet&logoColor=white)
 ![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-Razor_Pages-512BD4?logo=dotnet&logoColor=white)
 ![EF Core](https://img.shields.io/badge/EF_Core_10-512BD4?logo=dotnet&logoColor=white)
@@ -234,6 +235,21 @@ dotnet test tests/GameVault.E2E                 # tarayıcı testleri
 
 Her entegrasyon test sınıfı geçici bir `GameVaultTest_*` veritabanı oluşturur ve iş bitince siler. Test altyapısı
 bu önek dışındaki bir veritabanına karşı çalışmayı reddeder.
+
+## CI hattı
+
+GitHub Actions, `main` dalına yapılan her push'ta ve her pull request'te çalışır ([ci.yml](.github/workflows/ci.yml)):
+
+| İş | Ne kontrol eder |
+|---|---|
+| **Lint, build, test** | `dotnet format`, uyarıların hata sayıldığı Release derlemesi, zafiyetli NuGet paketleri, migration'ların modelle uyumu, geçici bir SQL Server konteynerine (rastgele parola) karşı entegrasyon testleri, Playwright E2E testleri. Test sonuçlarını (TRX) ve ekran görüntülerini yükler. |
+| **Docker image build** | Çalışma zamanı ve migration imajlarını derler, uygulamanın root olmayan kullanıcıyla çalıştığını kontrol eder. Üretim imajının eksik yapılandırmayla başlamayı reddettiğini doğrular, ardından tüm Compose yığınını başlatıp `/health` adresini yoklar. |
+| **Secret scan** | Tüm Git geçmişinde gitleaks taraması (sağlama toplamı doğrulanmış ikili dosya) |
+| **Dependency review** | Zafiyetli bağımlılık ekleyen pull request'leri engeller |
+| **CodeQL** ([codeql.yml](.github/workflows/codeql.yml)) | `security-extended` sorgularıyla C# kodunun statik güvenlik analizi; ayrıca haftalık zamanlanmış çalışma |
+
+Tüm üçüncü taraf action'lar tam commit SHA'larına sabitlenmiştir; iş akışları varsayılan olarak `contents: read`
+izniyle çalışır. Dependabot NuGet paketlerini, action'ları ve Docker imajlarını güncel tutar.
 
 ## Belgeler
 

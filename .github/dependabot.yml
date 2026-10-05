@@ -16,6 +16,7 @@ updates:
           - "xunit*"
           - "Microsoft.NET.Test.Sdk"
           - "Microsoft.Playwright"
+          - "Deque.AxeCore.Playwright"
           - "AngleSharp"
     ignore:
       # Ana sürüm yükseltmeleri (ör. xunit 4, .NET 11) bilinçli olarak elle yapılır.

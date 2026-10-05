@@ -4,6 +4,7 @@
 
 **A personal video game library: track what you play, what you finished and what's next.**
 
+[![CI](https://github.com/MertDas24/GameVault/actions/workflows/ci.yml/badge.svg)](https://github.com/MertDas24/GameVault/actions/workflows/ci.yml)
 ![.NET 10](https://img.shields.io/badge/.NET_10-512BD4?logo=dotnet&logoColor=white)
 ![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-Razor_Pages-512BD4?logo=dotnet&logoColor=white)
 ![EF Core](https://img.shields.io/badge/EF_Core_10-512BD4?logo=dotnet&logoColor=white)
@@ -231,6 +232,21 @@ dotnet test tests/GameVault.E2E                 # browser tests
 
 Each integration test class creates a temporary `GameVaultTest_*` database and drops it afterwards. The test
 harness refuses to run against any database without that prefix.
+
+## CI pipeline
+
+GitHub Actions runs on every push to `main` and on every pull request ([ci.yml](.github/workflows/ci.yml)):
+
+| Job | What it checks |
+|---|---|
+| **Lint, build, test** | `dotnet format`, Release build with warnings as errors, vulnerable NuGet packages, migrations in sync with the model, integration tests against a throwaway SQL Server container (random password), Playwright E2E tests. Uploads test results (TRX) and screenshots. |
+| **Docker image build** | Builds the runtime and migrator images and checks the app runs as a non-root user. Checks the production image refuses to start without required config, then starts the full Compose stack and probes `/health`. |
+| **Secret scan** | gitleaks (checksum-verified binary) over the full git history |
+| **Dependency review** | Blocks pull requests that add vulnerable dependencies |
+| **CodeQL** ([codeql.yml](.github/workflows/codeql.yml)) | Static security analysis of the C# code with the `security-extended` queries, plus a weekly scheduled run |
+
+All third-party actions are pinned to full commit SHAs, and workflows default to `contents: read`. Dependabot
+keeps NuGet packages, actions and Docker images up to date.
 
 ## Documentation
 

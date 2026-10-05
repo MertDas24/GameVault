@@ -223,6 +223,33 @@ Mevcut testler zaten kapsamlıydı. Eklenen testler, gerçek boşlukları kapat�
 > **Cevap:** Kodu bilerek bozup testin kırıldığını görüyorum (mutation testing'in elle yapılan hali). Bir de
 > pozitif kontrol ekliyorum: "başkası göremez" testinin yanında "sahibi görebilir" kontrolü olmalı.
 
+### Aşama 4: GitHub Actions (CI)
+**CI (Continuous Integration):** Her push'ta kodun otomatik olarak derlenip test edilmesi. Amaç, "benim
+bilgisayarımda çalışıyordu" sorununu ortadan kaldırmak.
+
+[ci.yml](../.github/workflows/ci.yml) dosyasını okurken dikkat edilecek noktalar:
+- **Paralel işler (jobs):** Test, Docker ve sır taraması ayrı makinelerde aynı anda çalışır.
+- **Geçici SQL Server:** Testler için her çalıştırmada yeni bir SQL Server konteyneri açılır. Parolası rastgele
+  üretilir ve `::add-mask::` ile loglarda gizlenir.
+- **`--locked-mode`:** Paketler yalnızca `packages.lock.json` dosyasındaki sürümlerle yüklenir. Bu, birinin araya
+  girip farklı bir paket sürümü yüklemesine karşı bir önlemdir (*supply chain security*).
+- **Action'ların SHA ile sabitlenmesi:** `actions/checkout@v7` yerine `actions/checkout@3d3c42e…` yazılır.
+  Etiket (tag) sonradan değiştirilebilir, commit SHA'sı değiştirilemez.
+- **`permissions: contents: read`:** İş akışı yalnızca kodu okuyabilir. Ele geçirilse bile depoya yazamaz.
+- **`has-pending-model-changes`:** Entity sınıfı değiştirilip migration eklenmeyi unutulursa CI kırılır.
+
+Bu aşamada yapılanlar:
+- CI'ın Docker dışındaki adımları yerelde çalıştırıldı. Gitleaks (geçmişte sır taraması) ve actionlint (iş akışı
+  sözdizimi denetimi) temiz çıktı.
+- SQL Server zamanında hazır olmazsa artık açık bir hata mesajı veriliyor. Önceden testler anlaşılmaz bir bağlantı
+  hatasıyla düşüyordu. *İyi bir CI, hatanın nedenini söyler.*
+- Test sonuçları TRX dosyası olarak kaydediliyor. Başarısız bir testin ayrıntısı Actions sayfasından indirilebilir.
+- README'ye CI durum rozeti eklendi. Rozet, depo GitHub'a yüklendiğinde çalışır.
+
+> **Mülakat sorusu:** "CI ile CD arasındaki fark nedir?"
+> **Cevap:** CI her değişikliği otomatik olarak derleyip test eder. CD (Continuous Delivery/Deployment) testleri
+> geçen sürümü otomatik olarak yayına alır. Bu projede yalnızca CI var, çünkü proje yayına alınmıyor.
+
 ---
 
 ## Kendi notlarım
