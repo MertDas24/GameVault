@@ -398,6 +398,43 @@ fazla tahmini süreye göre rastgele bir öneri yapar.
 > sonra `ORDER BY Id OFFSET n ROWS FETCH NEXT 1` ile tek satırı çekiyorum. Kullanıcının kütüphanesi `UserId`
 > indeksiyle zaten küçük bir kümeye indiği için iki yöntem de hızlı; ama ikincisi büyük tablolarda da ölçeklenir.
 
+### Aşama 8: İstatistik grafikleri
+İstatistik sayfasına iki grafik eklendi: **aylık etkinlik** (son 12 ayda başlanan ve bitirilen oyunlar) ve **puan
+dağılımı** (1–10). Platform, tür ve "en çok oynananlar" listeleri de çubuklu hâle geldi.
+
+- **Neden grafik kütüphanesi (Chart.js vb.) yok?** Uygulamanın CSP'si `script-src 'self'` ve `style-src 'self'`.
+  Yani CDN'den betik yüklenemez ve satır içi `style="..."` yasak. Çoğu grafik kütüphanesi satır içi stil yazar. Bunun
+  yerine grafikler sunucuda, Razor ile **SVG** olarak çizilir
+  ([_ColumnChart.cshtml](../GameVault.Web/Pages/Shared/_ColumnChart.cshtml)). SVG'nin `x`, `height`, `fill` gibi
+  öznitelikleri CSP'ye takılmaz; renkler zaten CSS sınıflarından gelir. Sayfa JavaScript olmadan da çalışır.
+- **Yüzde + piksel hilesi:** Sütunların yatay konumu yüzde (`x="25%"`), yüksekliği piksel. Grafik ekran genişliğine
+  uyar ama yazılar büyüyüp küçülmez (`viewBox` ile ölçekleseydik mobilde yazılar okunmaz hâle gelirdi).
+- **Eksen hesabı** ([Charts.cs](../GameVault.Web/Infrastructure/Charts.cs), `ChartScale.Axis`): en fazla 4 aralık,
+  adımlar 1-2-5-10-20-50… dizisinden. 7 → 0/2/4/6/8 olur, 23 → 0/10/20/30 olur. Saf bir fonksiyon olduğu için birim
+  testi kolay.
+- **Sorgular:** Puan dağılımı ve aylık sayımlar veritabanında `GROUP BY` ile yapılır. Oyunlar belleğe çekilmez.
+  Boş aylar sonradan sıfırla doldurulur; böylece grafik her zaman 12 sütun gösterir.
+- **"Bugün" yine dışarıdan gelir:** Aşama 7'deki saat dilimi tuzağı burada da geçerli. Ekim ayının ilk saatlerinde
+  UTC'ye göre hâlâ Eylül olabilir. Sayfa, gösterim saat dilimindeki bugünü servise parametre olarak verir.
+- **Tarih kaynağı:** Aylık grafik, kullanıcının girdiği başlama/bitirme tarihlerinden (`DateOnly`) hesaplanır,
+  `DateAdded`'dan değil. Böylece "kütüphaneye ne zaman eklendi" yerine "ne zaman oynandı" gösterilir. Saat dilimi
+  dönüşümü de gerekmez.
+- **Renk seçimi ölçülerek yapıldı:** İki serinin renkleri (mavi #4a90e0, turuncu #c98330) koyu zemin üzerinde
+  açıklık, renk körlüğü ayrımı ve kontrast açısından bir doğrulama betiğiyle kontrol edildi. Mavi-turuncu çifti
+  en yaygın renk körlüğü türlerinde de ayırt edilir. Renk tek başına bilgi taşımaz: lejant, araç ipucu (`<title>`)
+  ve tablo da var.
+- **Erişilebilirlik:** Her grafiğin altında "Tablo olarak göster" (`<details>`) vardır. Ekran okuyucu kullanıcıları
+  değerleri buradan okur. axe-core denetimi artık grafikler çizilmişken ve tablolar açıkken de çalışıyor.
+  Yüksek kontrast modunda (`forced-colors`) çubuklar sistem renklerine döner.
+- **Testler:** Puan dağılımı, 12 aylık pencerenin sınırları (pencere dışındaki eski ve gelecek tarihler sayılmaz),
+  boş grafik yerine açıklama metni, sayfada hiç `style` özniteliği olmaması (CSP regresyonu) ve eksen hesabı.
+
+> **Mülakat sorusu:** "Grafik için neden hazır bir kütüphane kullanmadın?"
+> **Cevap:** Sıkı bir CSP'm var ve ihtiyacım iki basit sütun grafiği. Kütüphane eklemek, CSP'yi gevşetmek
+> (`unsafe-inline`) ya da yeni bir bağımlılığı güncel tutmak demekti. SVG'yi sunucuda üretmek yaklaşık 160 satır.
+> Grafik JavaScript olmadan çalışıyor ve test edilebiliyor. İhtiyaç büyürse (etkileşimli filtre, zoom) bir kütüphane
+> eklemeyi o zaman değerlendiririm.
+
 ---
 
 ## Kendi notlarım

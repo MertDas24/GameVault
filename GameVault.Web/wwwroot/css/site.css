@@ -481,6 +481,44 @@ progress::-moz-progress-bar { background: linear-gradient(90deg, var(--accent), 
 .rank-list li { padding-left: .25rem; }
 .rank-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
 .rank-value { flex: none; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.rank-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
+.rank-bars li { display: grid; gap: .3rem; }
+.rank-bars progress { height: 8px; }
+
+/* ---------- Grafikler (sunucuda çizilen SVG; renkler sınıflarla, satır içi stil yok) ---------- */
+/* İki seri paleti koyu zemin (#181d31) için doğrulandı: açıklık bandı, renk körlüğü ayrımı (ΔE ≥ 24), kontrast ≥ 3:1. */
+:root {
+    --series-1: #4a90e0;
+    --series-2: #c98330;
+    --chart-grid: #262d4a;
+    --chart-axis: #3b4470;
+}
+.panel-wide { grid-column: 1 / -1; }
+.stats-grid .panel { scroll-margin-top: 5.5rem; }
+.chart-sub { font-size: .85rem; margin-bottom: .75rem; }
+.chart { container-type: inline-size; padding-left: 2rem; }
+.chart-svg { display: block; overflow: visible; }
+.chart-grid { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; }
+.chart-baseline { stroke: var(--chart-axis); }
+.chart-tick, .chart-label { fill: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.chart-hit { fill: transparent; }
+.chart-col:hover .chart-hit { fill: rgb(255 255 255 / 4%); }
+.chart-bar.series-1 { fill: var(--series-1); }
+.chart-bar.series-2 { fill: var(--series-2); }
+@container (max-width: 420px) {
+    .chart-thin-labels .chart-label-alt { display: none; }
+}
+.chart-legend { list-style: none; display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; margin: 0 0 .75rem; padding: 0; font-size: .85rem; color: var(--text-muted); }
+.chart-legend li { display: inline-flex; align-items: center; gap: .45rem; }
+.swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.swatch.series-1 { background: var(--series-1); }
+.swatch.series-2 { background: var(--series-2); }
+.chart-table { margin-top: .75rem; font-size: .9rem; }
+.chart-table summary { cursor: pointer; color: var(--accent-2); width: fit-content; }
+.chart-table table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
+.chart-table th, .chart-table td { padding: .3rem .5rem; border-bottom: 1px solid var(--border); text-align: left; font-weight: 400; }
+.chart-table thead th { color: var(--text-muted); font-weight: 600; }
+.chart-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ---------- Ayarlar ---------- */
 .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; align-items: start; }
@@ -497,4 +535,9 @@ progress::-moz-progress-bar { background: linear-gradient(90deg, var(--accent), 
 
 @media (forced-colors: active) {
     .btn, .panel, .card, .chip span { border: 1px solid CanvasText; }
+    .chart-bar { fill: CanvasText; }
+    .chart-bar.series-2 { fill: GrayText; }
+    .swatch.series-1 { background: CanvasText; }
+    .swatch.series-2 { background: GrayText; }
+    .chart-tick, .chart-label { fill: CanvasText; }
 }

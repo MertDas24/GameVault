@@ -42,7 +42,7 @@ silebilir. Arayüz Türkçe ve koyu temalıdır.
 |---|---|
 | ![Hazır kapaklarla oyun ekleme formu](docs/screenshots/add-game.png) | ![Açılış sayfası](docs/screenshots/landing.png) |
 | **Mobil** | |
-| <img src="docs/screenshots/mobile-library.png" alt="Alt gezinme çubuklu mobil kütüphane" width="300"> | |
+| <img src="docs/screenshots/mobile-library.png" alt="Alt gezinme çubuklu mobil kütüphane" width="300"> | <img src="docs/screenshots/mobile-stats.png" alt="Aylık etkinlik grafiğiyle mobil istatistikler" width="300"> |
 
 </details>
 
@@ -86,7 +86,7 @@ $env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/Game
 | Oyunlar | Ad, kapak (8 hazır kapak ya da izinli https adresi), açıklama, platform, en fazla 5 tür, durum, süre, 1–10 puan, notlar, başlama, bitirme ve çıkış tarihleri, tahmini bitirme süresi, favori. Kütüphanede aynı adlı oyun varsa eklemeden önce uyarır. |
 | RAWG araması | [RAWG](https://rawg.io)'da isimle arama; kapak, çıkış tarihi, platform ve türleri görüp bir sonucu seçerek ekleme formunu doldurma. Her kullanıcı bir RAWG oyununu yalnızca bir kez ekleyebilir. |
 | Ne oynasam? | Sıradaki oyunlardan (başlanmamış, ara verilmiş, isteğe bağlı olarak istek listesi) platform, tür ve en fazla tahmini süreye göre rastgele öneri. “Başka öner” son öneriyi atlar, “Oynamaya başla” oyunu “Oynuyorum” olarak işaretler. |
-| İstatistikler | Toplam oyun ve süre, ortalama puan, tamamlama oranı, durum dağılımı, en çok kullanılan platform ve türler, en çok oynananlar |
+| İstatistikler | Toplam oyun ve süre, ortalama puan, tamamlama oranı, durum dağılımı, son 12 ayda aylık başlanan ve bitirilen oyunlar, puan dağılımı, en çok kullanılan platform ve türler, en çok oynananlar. Grafikler sunucuda SVG olarak çizilir (grafik kütüphanesi ve satır içi stil yok); her birinin tablo görünümü vardır. |
 | Hesap | E-posta doğrulamalı kayıt, parola sıfırlama, görünen ad, parola değiştirme, diğer oturumları kapatma, JSON dışa aktarma, hesap silme |
 | Arayüz | Masaüstünde yan menü, mobilde alt gezinme çubuğu; klavyeyle kullanım; `aria-invalid` ile form hataları; azaltılmış hareket desteği |
 

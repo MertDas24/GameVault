@@ -32,6 +32,19 @@ else
     </section>
 
     <div class="stats-grid">
+        <section class="panel panel-wide" id="activity" aria-labelledby="activity-heading">
+            <h2 id="activity-heading">Aylık etkinlik</h2>
+            <p class="muted chart-sub">@Model.ActivityRange · oyunlara girdiğin başlama ve bitirme tarihlerinden</p>
+            @if (Model.HasActivity)
+            {
+                <partial name="_ColumnChart" model="Model.ActivityChart" />
+            }
+            else
+            {
+                <p class="muted">Son 12 ayda başlama ya da bitirme tarihi girilmiş bir oyun yok.</p>
+            }
+        </section>
+
         <section class="panel" aria-labelledby="status-heading">
             <h2 id="status-heading">Durumlara göre</h2>
             <ul class="bar-list">
@@ -47,14 +60,22 @@ else
             </ul>
         </section>
 
+        <section class="panel" id="ratings" aria-labelledby="rating-heading">
+            <h2 id="rating-heading">Puan dağılımı</h2>
+            @if (s.RatedGames == 0)
+            {
+                <p class="muted">Henüz hiçbir oyuna puan vermedin.</p>
+            }
+            else
+            {
+                <p class="muted chart-sub">@s.RatedGames puanlı oyun, 1–10 arası</p>
+                <partial name="_ColumnChart" model="Model.RatingChart" />
+            }
+        </section>
+
         <section class="panel" aria-labelledby="platform-heading">
             <h2 id="platform-heading">En çok kullanılan platformlar</h2>
-            <ol class="rank-list">
-                @foreach (var item in s.TopPlatforms)
-                {
-                    <li><span class="rank-row"><span class="break-anywhere">@item.Name</span><span class="rank-value">@item.Count oyun</span></span></li>
-                }
-            </ol>
+            <partial name="_RankBars" model='(s.TopPlatforms, "oyun")' />
         </section>
 
         <section class="panel" aria-labelledby="genre-heading">
@@ -65,12 +86,7 @@ else
             }
             else
             {
-                <ol class="rank-list">
-                    @foreach (var item in s.TopGenres)
-                    {
-                        <li><span class="rank-row"><span class="break-anywhere">@item.Name</span><span class="rank-value">@item.Count oyun</span></span></li>
-                    }
-                </ol>
+                <partial name="_RankBars" model='(s.TopGenres, "oyun")' />
             }
         </section>
 
@@ -82,12 +98,7 @@ else
             }
             else
             {
-                <ol class="rank-list">
-                    @foreach (var item in s.MostPlayed)
-                    {
-                        <li><span class="rank-row"><span class="break-anywhere">@item.Name</span><span class="rank-value">@Display.Number(item.Count) sa</span></span></li>
-                    }
-                </ol>
+                <partial name="_RankBars" model='(s.MostPlayed, "sa")' />
             }
         </section>
     </div>

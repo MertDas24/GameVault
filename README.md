@@ -41,7 +41,7 @@ see statistics, and export or delete all of their data. The UI is in Turkish and
 |---|---|
 | ![Add game form with built-in covers](docs/screenshots/add-game.png) | ![Landing page](docs/screenshots/landing.png) |
 | **Mobile** | |
-| <img src="docs/screenshots/mobile-library.png" alt="Mobile library with bottom navigation" width="300"> | |
+| <img src="docs/screenshots/mobile-library.png" alt="Mobile library with bottom navigation" width="300"> | <img src="docs/screenshots/mobile-stats.png" alt="Mobile statistics with the monthly activity chart" width="300"> |
 
 </details>
 
@@ -84,7 +84,7 @@ What I focused on, beyond the CRUD:
 | Games | Title, cover (8 built-in covers or an allow-listed https URL), description, platform, up to 5 genres, status, playtime, 1–10 rating, notes, start/finish/release dates, estimated hours to beat, favorite. Warns before adding a title that is already in the library. |
 | RAWG search | Search [RAWG](https://rawg.io) by title, see cover, release date, platforms and genres, then pick a result to prefill the add form. Each user can add a RAWG game only once. |
 | What should I play? | Random pick from the backlog (not started, on hold and optionally wishlist), filtered by platform, genre and max estimated hours. "Pick another" skips the last pick, and "Start playing" marks the game as playing. |
-| Statistics | Total games and hours, average rating, completion rate, status breakdown, top platforms and genres, most played |
+| Statistics | Total games and hours, average rating, completion rate, status breakdown, started vs. finished games per month (last 12 months), rating distribution, top platforms and genres, most played. Charts are server-rendered SVG (no chart library, no inline styles), each with a table view. |
 | Account | Registration with email confirmation, password reset, display name, password change, sign out other sessions, JSON export, account deletion |
 | UX | Responsive layout with a sidebar on desktop and a bottom nav on mobile, keyboard accessible, `aria-invalid` form errors, reduced motion support |
 

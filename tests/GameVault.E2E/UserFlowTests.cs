@@ -260,6 +260,9 @@ public sealed class UserFlowTests(E2EFixture fixture) : IClassFixture<E2EFixture
         await page.GetByLabel("Oyun adı").FillAsync("Erişilebilir Oyun");
         await page.GetByRole(AriaRole.Combobox, new() { Name = "Platform", Exact = true }).SelectOptionAsync(new SelectOptionValue { Label = "PC" });
         await page.GetByLabel("Nebula").CheckAsync();
+        // Puan ve başlama tarihi: /Stats denetiminde grafiklerin (SVG + tablo) da çizilmesi için.
+        await page.GetByLabel("Kişisel puan").SelectOptionAsync("8");
+        await page.GetByLabel("Başlama tarihi").FillAsync(DateTime.UtcNow.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
         await page.GetByRole(AriaRole.Button, new() { Name = "Kütüphaneye ekle" }).ClickAsync();
         await Audit("ayrıntı");
         await page.GetByRole(AriaRole.Link, new() { Name = "Sil…" }).ClickAsync();
@@ -270,6 +273,16 @@ public sealed class UserFlowTests(E2EFixture fixture) : IClassFixture<E2EFixture
             await page.GotoAsync(fixture.BaseUrl + url);
             await Audit(url);
         }
+
+        // Grafiklerin tablo görünümleri açıkken de denetlenir (kapalı <details> içeriği taranmaz).
+        await page.GotoAsync(fixture.BaseUrl + "/Stats");
+        Assert.Equal(2, await page.Locator("svg.chart-svg").CountAsync());
+        foreach (var summary in await page.Locator("details.chart-table > summary").AllAsync())
+        {
+            await summary.ClickAsync();
+        }
+
+        await Audit("/Stats (tablolar açık)");
 
         await page.SetViewportSizeAsync(390, 844);
         await page.GotoAsync(fixture.BaseUrl + "/Library");

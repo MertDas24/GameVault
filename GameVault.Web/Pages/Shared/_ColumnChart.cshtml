@@ -1,0 +1,82 @@
+@model ColumnChart
+@{
+    var c = Model;
+    var slot = c.SlotPercent;
+    string Tooltip(ColumnGroup g) => c.Series.Count == 1
+        ? $"{g.FullLabel}: {Display.Number(g.Values[0])}"
+        : g.FullLabel + ": " + string.Join(", ", c.Series.Select((s, i) => $"{Display.Number(g.Values[i])} {s.Name.ToLowerInvariant()}"));
+}
+@if (c.Series.Count > 1)
+{
+    <ul class="chart-legend">
+        @foreach (var s in c.Series)
+        {
+            <li><span class="swatch @s.CssClass" aria-hidden="true"></span>@s.Name</li>
+        }
+    </ul>
+}
+@* Ekran okuyucular değerleri aşağıdaki tablodan okur; SVG yalnızca görsel özettir. *@
+<div class="chart@(c.ThinLabels ? " chart-thin-labels" : "")">
+    <svg class="chart-svg" width="100%" height="@ColumnChart.Height" role="img" aria-labelledby="@c.Id-title" focusable="false">
+        <title id="@c.Id-title">@c.Title (değerler grafiğin altındaki tabloda)</title>
+        @foreach (var tick in c.Ticks)
+        {
+            var y = ColumnChart.Num(c.Y(tick));
+            <g>
+                <line class="chart-grid@(tick == 0 ? " chart-baseline" : "")" x1="0" x2="100%" y1="@y" y2="@y" />
+                <text class="chart-tick" x="-8" y="@y" dy="0.32em" text-anchor="end">@Display.Number(tick)</text>
+            </g>
+        }
+        @for (var i = 0; i < c.Groups.Count; i++)
+        {
+            var g = c.Groups[i];
+            <svg class="chart-col" x="@ColumnChart.Num(i * slot)%" width="@ColumnChart.Num(slot)%" height="@ColumnChart.Height" overflow="visible">
+                <title>@Tooltip(g)</title>
+                <rect class="chart-hit" x="0" y="0" width="100%" height="@ColumnChart.Baseline" />
+                @for (var s = 0; s < c.Series.Count; s++)
+                {
+                    var value = g.Values[s];
+                    if (value <= 0)
+                    {
+                        continue;
+                    }
+
+                    var h = c.BarHeight(value);
+                    var cap = Math.Min(h, 4);
+                    var offset = c.BarOffset(s);
+                    @* Üstü 4px yuvarlatılmış, tabanı düz sütun: yuvarlak dikdörtgenin alt köşesi düz bir parçayla kapatılır. *@
+                    <rect class="chart-bar @c.Series[s].CssClass" x="50%" transform="translate(@offset 0)" y="@ColumnChart.Num(c.Y(value))" width="@c.BarWidth" height="@ColumnChart.Num(h)" rx="@ColumnChart.Num(cap)" />
+                    <rect class="chart-bar @c.Series[s].CssClass" x="50%" transform="translate(@offset 0)" y="@ColumnChart.Num(ColumnChart.Baseline - cap)" width="@c.BarWidth" height="@ColumnChart.Num(cap)" />
+                }
+                <text class="chart-label@(i % 2 == 1 ? " chart-label-alt" : "")" x="50%" y="@ColumnChart.LabelY" text-anchor="middle">@g.Label</text>
+            </svg>
+        }
+    </svg>
+</div>
+<details class="chart-table">
+    <summary>Tablo olarak göster</summary>
+    <table>
+        <caption class="visually-hidden">@c.Title</caption>
+        <thead>
+            <tr>
+                <th scope="col">@c.CategoryHeader</th>
+                @foreach (var s in c.Series)
+                {
+                    <th scope="col" class="num">@s.Name</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var g in c.Groups)
+            {
+                <tr>
+                    <th scope="row">@g.FullLabel</th>
+                    @foreach (var v in g.Values)
+                    {
+                        <td class="num">@Display.Number(v)</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</details>

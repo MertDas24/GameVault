@@ -62,6 +62,9 @@ public sealed class ReadmeScreenshots(E2EFixture fixture) : IClassFixture<E2EFix
             var page = await mobile.NewPageAsync();
             await LoginAsync(page, password);
             await Shot(page, outDir!, "mobile-library");
+
+            await page.GotoAsync(fixture.BaseUrl + "/Stats#activity");
+            await Shot(page, outDir!, "mobile-stats");
         }
     }
 

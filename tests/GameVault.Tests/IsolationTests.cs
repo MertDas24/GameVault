@@ -149,10 +149,12 @@ public sealed class IsolationTests(GameVaultFactory factory) : IClassFixture<Gam
         var all = LibraryQuery.FromRaw(null, null, null, null, null, null, null, null);
         Assert.Equal(0, (await library.SearchAsync(bobId, all)).TotalCount);
         Assert.Equal(0, await library.CountAsync(bobId));
-        var bobStats = await stats.GetAsync(bobId);
+        var bobStats = await stats.GetAsync(bobId, DateOnly.FromDateTime(DateTime.UtcNow));
         Assert.Equal(0, bobStats.TotalGames);
         Assert.Equal(0, bobStats.TotalPlaytimeHours);
         Assert.Empty(bobStats.MostPlayed);
+        Assert.All(bobStats.RatingDistribution, count => Assert.Equal(0, count));
+        Assert.All(bobStats.MonthlyActivity, m => Assert.Equal((0, 0), (m.Started, m.Completed)));
 
         var game = await factory.WithDbAsync(db => db.LibraryGames.AsNoTracking().SingleAsync(g => g.Id == gameId));
         Assert.Equal("Servis Katmanı Oyunu", game.Title);

@@ -53,6 +53,7 @@ public sealed class DemoDataSeeder(GameVaultDbContext db, UserManager<Applicatio
         var platforms = await db.Platforms.ToDictionaryAsync(p => p.Name, ct);
         var genres = await db.Genres.ToDictionaryAsync(g => g.Name, ct);
 
+        var today = DateOnly.FromDateTime(now);
         var i = 0;
         foreach (var g in Games)
         {
@@ -71,6 +72,9 @@ public sealed class DemoDataSeeder(GameVaultDbContext db, UserManager<Applicatio
                 Rating = g.Rating,
                 IsFavorite = g.Fav,
                 EstimatedHours = g.Estimate,
+                // Kurgusal tarihler: istatistiklerdeki aylık etkinlik grafiği boş görünmesin diye son aylara yayılır.
+                StartDate = g.Status is GameStatus.NotStarted or GameStatus.Wishlist ? null : today.AddMonths(-(i % 6 + 2)),
+                CompletionDate = g.Status == GameStatus.Completed ? today.AddMonths(-(i % 3)) : null,
                 DateAdded = added,
                 UpdatedAtUtc = added
             });
