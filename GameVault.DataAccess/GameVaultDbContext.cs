@@ -16,10 +16,12 @@ public class GameVaultDbContext(DbContextOptions<GameVaultDbContext> options)
     public const int CoverUrlMaxLength = 500;
     public const int DisplayNameMaxLength = 50;
     public const int ReferenceNameMaxLength = 50;
+    public const int CollectionNameMaxLength = 40;
 
     public DbSet<LibraryGame> LibraryGames => Set<LibraryGame>();
     public DbSet<Genre> Genres => Set<Genre>();
     public DbSet<Platform> Platforms => Set<Platform>();
+    public DbSet<GameCollection> Collections => Set<GameCollection>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<RateLimitCounter> RateLimitCounters => Set<RateLimitCounter>();
     public DbSet<OutboxEmail> OutboxEmails => Set<OutboxEmail>();
@@ -86,6 +88,15 @@ public class GameVaultDbContext(DbContextOptions<GameVaultDbContext> options)
                     l => l.HasOne<LibraryGame>().WithMany().HasForeignKey("LibraryGameId").OnDelete(DeleteBehavior.Cascade),
                     j => j.HasKey("LibraryGameId", "GenreId"));
 
+            // Koleksiyon silinince yalnızca bağlantılar silinir, oyunlar kalır.
+            entity.HasMany(g => g.Collections)
+                .WithMany(c => c.Games)
+                .UsingEntity<Dictionary<string, object>>(
+                    "LibraryGameCollections",
+                    r => r.HasOne<GameCollection>().WithMany().HasForeignKey("CollectionId").OnDelete(DeleteBehavior.Cascade),
+                    l => l.HasOne<LibraryGame>().WithMany().HasForeignKey("LibraryGameId").OnDelete(DeleteBehavior.Cascade),
+                    j => j.HasKey("LibraryGameId", "CollectionId"));
+
             // Liste, filtre ve sıralama sorguları her zaman kullanıcıya göre başlar.
             entity.HasIndex(g => new { g.UserId, g.DateAdded });
             entity.HasIndex(g => new { g.UserId, g.Title });
@@ -94,6 +105,20 @@ public class GameVaultDbContext(DbContextOptions<GameVaultDbContext> options)
             // Aynı RAWG oyunu aynı kullanıcının kütüphanesinde bir kez bulunabilir; farklı kullanıcılar ekleyebilir.
             entity.HasIndex(g => new { g.UserId, g.RawgId }).IsUnique().HasFilter("[RawgId] IS NOT NULL");
             entity.HasIndex(g => g.PlatformId);
+        });
+
+        builder.Entity<GameCollection>(entity =>
+        {
+            entity.Property(c => c.Name).IsRequired().HasMaxLength(CollectionNameMaxLength);
+            // Aynı kullanıcıda aynı adlı iki koleksiyon olamaz (harmanlama gereği büyük/küçük harf duyarsız).
+            entity.HasIndex(c => new { c.UserId, c.Name }).IsUnique();
+
+            // Kullanıcı → koleksiyon zinciri cascade değil: kullanıcı → oyun → bağlantı yoluyla birlikte SQL Server'da
+            // "birden çok cascade yolu" hatası verirdi. Hesap silinirken koleksiyonlar açıkça silinir (AccountService).
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<UserSession>(entity =>

@@ -13,7 +13,8 @@ public sealed class NewModel(
     LibraryService library,
     ReferenceDataService referenceData,
     GameCatalog catalog,
-    DbRateLimiter limiter) : GameFormPageModel(referenceData)
+    CollectionService collections,
+    DbRateLimiter limiter) : GameFormPageModel(referenceData, collections)
 {
     public bool CatalogEnabled => catalog.IsEnabled;
 

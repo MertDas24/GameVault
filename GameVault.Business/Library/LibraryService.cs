@@ -56,6 +56,12 @@ public sealed class LibraryService(
             games = games.Where(g => g.Genres.Any(genre => genre.Id == genreId));
         }
 
+        if (query.CollectionId is { } collectionId)
+        {
+            // Oyunlar zaten kullanıcıya göre süzüldü; başka kullanıcının koleksiyon kimliği boş sonuç verir.
+            games = games.Where(g => g.Collections.Any(c => c.Id == collectionId));
+        }
+
         if (query.FavoritesOnly)
         {
             games = games.Where(g => g.IsFavorite);
@@ -107,6 +113,7 @@ public sealed class LibraryService(
                 g.PlatformId,
                 PlatformName = g.Platform.Name,
                 Genres = g.Genres.OrderBy(x => x.Name).Select(x => new ReferenceItem(x.Id, x.Name)).ToList(),
+                Collections = g.Collections.OrderBy(x => x.Name).Select(x => new ReferenceItem(x.Id, x.Name)).ToList(),
                 g.Status,
                 g.Rating,
                 g.PlaytimeHours,
@@ -127,7 +134,8 @@ public sealed class LibraryService(
             : new GameDetails(
                 game.Id, game.Title, game.Description, game.CoverImageUrl, game.PlatformId, game.PlatformName,
                 game.Genres, game.Status, game.Rating, game.PlaytimeHours, game.IsFavorite, game.Notes,
-                game.StartDate, game.CompletionDate, game.DateAdded, game.UpdatedAtUtc, game.ReleaseDate, game.RawgId, game.EstimatedHours);
+                game.StartDate, game.CompletionDate, game.DateAdded, game.UpdatedAtUtc, game.ReleaseDate, game.RawgId, game.EstimatedHours,
+                game.Collections);
     }
 
     public async Task<GameInput?> GetInputAsync(Guid userId, Guid id, CancellationToken ct = default)
@@ -147,6 +155,7 @@ public sealed class LibraryService(
             CoverUrl = url,
             PlatformId = details.PlatformId,
             GenreIds = details.Genres.Select(g => g.Id).ToList(),
+            CollectionIds = (details.Collections ?? []).Select(c => c.Id).ToList(),
             Status = details.Status,
             PlaytimeHours = details.PlaytimeHours,
             Rating = details.Rating,
@@ -202,7 +211,7 @@ public sealed class LibraryService(
                 $"Kütüphanende en fazla {options.Value.MaxGamesPerUser} oyun bulunabilir.");
         }
 
-        var validated = await ValidateAsync(input, ct);
+        var validated = await ValidateAsync(userId, input, ct);
         if (validated.Errors is not null)
         {
             return OperationResult<Guid>.Invalid(validated.Errors);
@@ -229,6 +238,10 @@ public sealed class LibraryService(
         {
             await db.SaveChangesAsync(ct);
         }
+        catch (DbUpdateException ex) when (IsCollectionNameConflict(ex))
+        {
+            return OperationResult<Guid>.Invalid(nameof(GameInput.NewCollections), CollectionConflictError);
+        }
         catch (DbUpdateException ex) when (input.RawgId is not null && IsUniqueViolation(ex))
         {
             // Aynı anda gelen iki istekte yukarıdaki kontrol ikisini de geçirebilir; indeks ikincisini durdurur.
@@ -239,6 +252,12 @@ public sealed class LibraryService(
     }
 
     public const string DuplicateRawgGameError = "Bu oyun zaten kütüphanende.";
+
+    private const string CollectionConflictError = "Bu adla bir koleksiyon aynı anda oluşturuldu. Lütfen tekrar kaydet.";
+
+    /// <summary>Yeni koleksiyon, aynı anda başka bir istekte aynı adla oluşturuldu (benzersiz indeks).</summary>
+    private static bool IsCollectionNameConflict(DbUpdateException ex) =>
+        IsUniqueViolation(ex) && ex.InnerException!.Message.Contains("IX_Collections_UserId_Name", StringComparison.Ordinal);
 
     /// <summary>
     /// Dosyadan gelen oyunları ekler. Her aday, formla eklenen oyunlarla aynı kurallarla doğrulanır.
@@ -259,7 +278,8 @@ public sealed class LibraryService(
 
         var refs = new ReferenceCache(
             (await db.Platforms.Select(p => p.Id).ToListAsync(ct)).ToHashSet(),
-            await db.Genres.ToDictionaryAsync(g => g.Id, ct));
+            await db.Genres.ToDictionaryAsync(g => g.Id, ct),
+            await LoadCollectionsAsync(userId, ct));
 
         var now = time.GetUtcNow().UtcDateTime;
         var skipped = new List<ImportIssue>();
@@ -269,7 +289,7 @@ public sealed class LibraryService(
         foreach (var candidate in candidates)
         {
             var input = candidate.Input;
-            var validated = await ValidateAsync(input, ct, refs);
+            var validated = await ValidateAsync(userId, input, ct, refs);
             if (validated.Errors is not null)
             {
                 errors.Add(new ImportIssue(candidate.Position, input.Title, string.Join(" ", validated.Errors.Values.Distinct())));
@@ -332,6 +352,7 @@ public sealed class LibraryService(
     {
         var game = await OwnedBy(userId)
             .Include(g => g.Genres)
+            .Include(g => g.Collections)
             .FirstOrDefaultAsync(g => g.Id == id, ct);
 
         if (game is null)
@@ -339,14 +360,22 @@ public sealed class LibraryService(
             return OperationResult<Guid>.Missing();
         }
 
-        var validated = await ValidateAsync(input, ct);
+        var validated = await ValidateAsync(userId, input, ct);
         if (validated.Errors is not null)
         {
             return OperationResult<Guid>.Invalid(validated.Errors);
         }
 
         Apply(game, input, validated, time.GetUtcNow().UtcDateTime);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (IsCollectionNameConflict(ex))
+        {
+            return OperationResult<Guid>.Invalid(nameof(GameInput.NewCollections), CollectionConflictError);
+        }
+
         return OperationResult<Guid>.Success(game.Id);
     }
 
@@ -410,14 +439,65 @@ public sealed class LibraryService(
         {
             game.Genres.Add(genre);
         }
+
+        game.Collections.Clear();
+        foreach (var collection in validated.Collections)
+        {
+            game.Collections.Add(collection);
+        }
+
+        foreach (var name in validated.NewCollectionNames)
+        {
+            var collection = validated.CollectionSet.GetOrCreate(game.UserId, name, now);
+            if (!game.Collections.Contains(collection))
+            {
+                game.Collections.Add(collection);
+            }
+        }
     }
 
-    private sealed record ValidatedInput(Dictionary<string, string>? Errors, string? CoverUrl, List<Genre> Genres);
+    private sealed record ValidatedInput(
+        Dictionary<string, string>? Errors,
+        string? CoverUrl,
+        List<Genre> Genres,
+        List<GameCollection> Collections,
+        IReadOnlyList<string> NewCollectionNames,
+        CollectionSet CollectionSet);
 
-    /// <summary>Toplu doğrulamada (içe aktarma) her oyun için veritabanına gitmemek için platform ve tür listesi.</summary>
-    private sealed record ReferenceCache(HashSet<int> PlatformIds, Dictionary<int, Genre> Genres);
+    /// <summary>Toplu doğrulamada (içe aktarma) her oyun için veritabanına gitmemek için platform, tür ve koleksiyon listesi.</summary>
+    private sealed record ReferenceCache(HashSet<int> PlatformIds, Dictionary<int, Genre> Genres, CollectionSet Collections);
 
-    private async Task<ValidatedInput> ValidateAsync(GameInput input, CancellationToken ct, ReferenceCache? refs = null)
+    /// <summary>
+    /// Kullanıcının koleksiyonları (izlenen varlıklar). Yeni adlar ilk kullanımda oluşturulur ve kümeye eklenir;
+    /// böylece içe aktarmada aynı yeni koleksiyonu kullanan oyunlar tek bir kayda bağlanır.
+    /// </summary>
+    private sealed class CollectionSet(List<GameCollection> existing)
+    {
+        private readonly Dictionary<string, GameCollection> _byName = existing.ToDictionary(c => c.Name, StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<int, GameCollection> _byId = existing.ToDictionary(c => c.Id);
+
+        public int Count => _byName.Count;
+
+        public GameCollection? ById(int id) => _byId.GetValueOrDefault(id);
+
+        public bool Contains(string name) => _byName.ContainsKey(name);
+
+        public GameCollection GetOrCreate(Guid userId, string name, DateTime now)
+        {
+            if (!_byName.TryGetValue(name, out var collection))
+            {
+                collection = new GameCollection { UserId = userId, Name = name, CreatedAtUtc = now };
+                _byName[name] = collection;
+            }
+
+            return collection;
+        }
+    }
+
+    private async Task<CollectionSet> LoadCollectionsAsync(Guid userId, CancellationToken ct) =>
+        new(await db.Collections.Where(c => c.UserId == userId).ToListAsync(ct));
+
+    private async Task<ValidatedInput> ValidateAsync(Guid userId, GameInput input, CancellationToken ct, ReferenceCache? refs = null)
     {
         var errors = new Dictionary<string, string>();
 
@@ -463,6 +543,35 @@ public sealed class LibraryService(
             }
         }
 
+        // Koleksiyonlar: seçilen kimlikler yalnızca bu kullanıcının koleksiyonlarından olabilir (başkasınınki "geçersiz").
+        var collectionSet = refs?.Collections ?? await LoadCollectionsAsync(userId, ct);
+        var selectedCollections = new List<GameCollection>();
+        foreach (var id in input.CollectionIds.Distinct())
+        {
+            if (collectionSet.ById(id) is { } owned)
+            {
+                selectedCollections.Add(owned);
+            }
+            else
+            {
+                errors.TryAdd(nameof(GameInput.CollectionIds), "Geçersiz koleksiyon seçimi.");
+            }
+        }
+
+        var newNames = CollectionRules.SplitNames(input.NewCollections);
+        if (newNames.Select(CollectionRules.NameError).FirstOrDefault(e => e is not null) is { } nameError)
+        {
+            errors.TryAdd(nameof(GameInput.NewCollections), nameError);
+        }
+        else if (collectionSet.Count + newNames.Count(n => !collectionSet.Contains(n)) > CollectionRules.MaxPerUser)
+        {
+            errors.TryAdd(nameof(GameInput.NewCollections), $"En fazla {CollectionRules.MaxPerUser} koleksiyon oluşturabilirsin.");
+        }
+        else if (selectedCollections.Select(c => c.Name).Concat(newNames).Distinct(StringComparer.OrdinalIgnoreCase).Count() > CollectionRules.MaxPerGame)
+        {
+            errors.TryAdd(nameof(GameInput.CollectionIds), $"Bir oyun en fazla {CollectionRules.MaxPerGame} koleksiyonda olabilir.");
+        }
+
         var today = DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime);
         var earliest = new DateOnly(1970, 1, 1);
         if (input.StartDate is { } start && (start < earliest || start > today.AddDays(1)))
@@ -486,7 +595,7 @@ public sealed class LibraryService(
             errors.TryAdd(nameof(GameInput.CompletionDate), "Bitirme tarihi başlama tarihinden önce olamaz.");
         }
 
-        return new ValidatedInput(errors.Count > 0 ? errors : null, cover.Value, genres);
+        return new ValidatedInput(errors.Count > 0 ? errors : null, cover.Value, genres, selectedCollections, newNames, collectionSet);
     }
 
     private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

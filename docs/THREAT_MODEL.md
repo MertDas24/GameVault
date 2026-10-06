@@ -26,7 +26,7 @@ güvenli olduğu anlamına gelmez. Bağımsız bir güvenlik incelemesi yapılma
 ## Giriş noktaları
 
 - Herkese açık: `/`, `/Privacy`, `/Account/Login`, `/Account/Register`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Error`, `/health`, `/health/live`, statik dosyalar.
-- Kimlik doğrulama gerektiren: `/Library/**`, `/Stats`, `/Account/Settings`, `/Account/Export`, `/Account/Import`, `/Account/Delete`, `/Account/Logout` (POST).
+- Kimlik doğrulama gerektiren: `/Library/**`, `/Stats`, `/Collections`, `/Account/Settings`, `/Account/Export`, `/Account/Import`, `/Account/Delete`, `/Account/Logout` (POST).
 - Operasyon: migration paketi (`efbundle`), geliştirme komutu `seed-demo` (yalnızca Development).
 
 ## Kötüye kullanım senaryoları ve önlemler
@@ -38,7 +38,7 @@ güvenli olduğu anlamına gelmez. Bağımsız bir güvenlik incelemesi yapılma
 | Başkasının adresiyle kayıt | E-posta doğrulanmadan giriş yapılamaz; doğrulama bağlantısı 24 saat geçerli, tek kullanımlık, yalnızca POST ile tüketilir | `EmailConfirmationTests` |
 | Veritabanı dökümüyle çerez/token üretme | Data Protection anahtarları üretimde veritabanı dışında tutulan bir sertifikayla şifrelenir; sertifikasız üretim başlangıcı reddedilir | `DataProtectionTests`, `UnitTests.Production_refuses_to_start_without_a_usable_data_protection_certificate`, CI Docker işi |
 | E-posta içeriğinin sızması | Outbox gövdesi Data Protection ile şifreli; gönderim bitince alıcı ve gövde silinir; loglarda alıcı/token yok | `OutboxTests` |
-| Başka kullanıcının verisine erişim (IDOR) | Her sorgu oturumdaki userId ile filtrelenir; başkasına ait kayıt 404 döner; userId istemciden alınmaz | `IsolationTests` |
+| Başka kullanıcının verisine erişim (IDOR) | Her sorgu oturumdaki userId ile filtrelenir; başkasına ait kayıt 404 döner; userId istemciden alınmaz; oyun yalnızca sahibinin koleksiyonlarına bağlanabilir | `IsolationTests`, `CollectionTests.Collections_of_another_user_*` |
 | Mass assignment | Form yalnızca `GameInput` alanlarını kabul eder; varlığa açık alan eşlemesi | `IsolationTests.Client_supplied_owner_fields_are_ignored_on_create` |
 | Hazırlanmış içe aktarma dosyası | Dosyadaki kimlik, sahip ve hesap alanları okunmaz; her oyun formla aynı kurallarla doğrulanır (kapak izin listesi dahil); platform ve türler yalnızca mevcut kayıtlarla eşleşir; tek transaction | `ImportTests.Owner_and_id_fields_in_the_file_are_ignored`, `ImportTests.Invalid_records_are_reported_...` |
 | CSRF | Tüm POST'larda antiforgery doğrulaması; SameSite=Lax oturum çerezi; durum değiştiren GET yok | `AuthTests.Post_without_antiforgery_token_is_rejected` |

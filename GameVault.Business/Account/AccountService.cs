@@ -32,6 +32,7 @@ public sealed class AccountService(GameVaultDbContext db, UserManager<Applicatio
                 g.CoverImageUrl,
                 Platform = g.Platform.Name,
                 Genres = g.Genres.OrderBy(x => x.Name).Select(x => x.Name).ToList(),
+                Collections = g.Collections.OrderBy(x => x.Name).Select(x => x.Name).ToList(),
                 g.Status,
                 g.Rating,
                 g.PlaytimeHours,
@@ -54,7 +55,7 @@ public sealed class AccountService(GameVaultDbContext db, UserManager<Applicatio
             games.Select(g => new ExportGame(
                 g.Id, g.Title, g.Description, g.CoverImageUrl, g.Platform, g.Genres,
                 StatusLabels.Key(g.Status), g.Rating, g.PlaytimeHours, g.IsFavorite, g.Notes,
-                g.StartDate, g.CompletionDate, g.DateAdded, g.UpdatedAtUtc, g.ReleaseDate, g.RawgId, g.EstimatedHours)).ToList());
+                g.StartDate, g.CompletionDate, g.DateAdded, g.UpdatedAtUtc, g.ReleaseDate, g.RawgId, g.EstimatedHours, g.Collections)).ToList());
     }
 
     /// <summary>Kullanıcının tüm sunucu oturumlarını siler (isteğe bağlı olarak biri hariç).</summary>
@@ -90,6 +91,8 @@ public sealed class AccountService(GameVaultDbContext db, UserManager<Applicatio
             // Veritabanındaki cascade kuralları da aynı sonucu verir; açık silme,
             // davranışı şemadan bağımsız ve test edilebilir kılar.
             await db.LibraryGames.Where(g => g.UserId == userId).ExecuteDeleteAsync(ct);
+            // Koleksiyonlar kullanıcıya cascade ile bağlı değil (bkz. GameVaultDbContext); oyunlardan sonra açıkça silinir.
+            await db.Collections.Where(c => c.UserId == userId).ExecuteDeleteAsync(ct);
             await db.UserSessions.Where(s => s.UserId == userId).ExecuteDeleteAsync(ct);
             // Kuyrukta bekleyen e-postalar (alıcı adresi ve bağlantı içerir) ve tamamlanmış işlerin takip kayıtları.
             await db.OutboxEmails.Where(e => e.UserId == userId).ExecuteDeleteAsync(ct);

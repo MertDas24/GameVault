@@ -202,6 +202,7 @@ public static class ServiceRegistration
         services.AddScoped<AccountEmails>();
         services.AddScoped<LibraryService>();
         services.AddScoped<ReferenceDataService>();
+        services.AddScoped<CollectionService>();
         services.AddScoped<StatsService>();
         services.AddScoped<SuggestionService>();
         services.AddScoped<AccountService>();

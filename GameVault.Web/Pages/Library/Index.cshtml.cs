@@ -5,26 +5,28 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GameVault.Web.Pages.Library;
 
-public sealed class IndexModel(LibraryService library, ReferenceDataService referenceData) : AppPageModel
+public sealed class IndexModel(LibraryService library, ReferenceDataService referenceData, CollectionService collections) : AppPageModel
 {
     public LibraryQuery Query { get; private set; } = new();
     public PagedResult<GameCard> Result { get; private set; } = new([], 1, LibraryQuery.DefaultPageSize, 0);
     public int LibraryTotal { get; private set; }
     public IReadOnlyList<ReferenceItem> Platforms { get; private set; } = [];
     public IReadOnlyList<ReferenceItem> Genres { get; private set; } = [];
+    public IReadOnlyList<CollectionSummary> Collections { get; private set; } = [];
     public string CurrentUrl { get; private set; } = "/Library";
 
     public async Task OnGetAsync(
         [FromQuery] string? q, [FromQuery] string? status, [FromQuery] string? platform, [FromQuery] string? genre,
-        [FromQuery] string? fav, [FromQuery] string? sort, [FromQuery] string? page, [FromQuery] string? size,
+        [FromQuery] string? fav, [FromQuery] string? sort, [FromQuery] string? page, [FromQuery] string? size, [FromQuery] string? collection,
         CancellationToken ct)
     {
-        Query = LibraryQuery.FromRaw(q, status, platform, genre, fav, sort, page, size);
+        Query = LibraryQuery.FromRaw(q, status, platform, genre, fav, sort, page, size, collection);
         var userId = CurrentUserId;
         Result = await library.SearchAsync(userId, Query, ct);
         LibraryTotal = Query.HasFilters ? await library.CountAsync(userId, ct) : Result.TotalCount;
         Platforms = await referenceData.GetPlatformsAsync(ct);
         Genres = await referenceData.GetGenresAsync(ct);
+        Collections = await collections.ListAsync(userId, ct);
         CurrentUrl = PageUrl(Result.Page);
     }
 
@@ -50,6 +52,11 @@ public sealed class IndexModel(LibraryService library, ReferenceDataService refe
         if (Query.GenreId is { } g)
         {
             qb.Add("genre", g.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        if (Query.CollectionId is { } c)
+        {
+            qb.Add("collection", c.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
         if (Query.FavoritesOnly)

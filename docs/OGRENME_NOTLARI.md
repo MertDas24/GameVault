@@ -468,6 +468,36 @@ kurulmuş bir veritabanına geri yükleyebilirsin.
 > (tek transaction). Dosyayı diske yazmıyorum, akıştan okuyorum; böylece geçici dosya temizliği ya da yol (path)
 > saldırısı gibi sorunlar da oluşmuyor.
 
+### Aşama 10: Koleksiyonlar (etiketler)
+Kullanıcı oyunlarını "Hafta sonu", "Arkadaşlarla" gibi kendi listelerinde gruplayabilir. Bir oyun birden fazla
+koleksiyonda olabilir (çoka çok ilişki).
+
+- **Tür ile koleksiyonun farkı:** Türler (`Genres`) herkes için ortak, salt okunur başvuru verisidir. Koleksiyonlar
+  ise kişiseldir: her kaydın bir `UserId`'si var. Bu yüzden ortak bir "etiket" tablosu yerine kullanıcıya ait ayrı bir
+  tablo (`Collections`) tasarlandı.
+- **Yeni bir IDOR yüzeyi:** Formdan gelen `CollectionIds` başka bir kullanıcının koleksiyon kimliği olabilir. Servis,
+  seçilen kimliklerin yalnızca oturumdaki kullanıcının koleksiyonları arasından gelmesine izin verir; aksi hâlde
+  "Geçersiz koleksiyon seçimi" der. Test: Bob, Alice'in koleksiyonunu kendi oyununa bağlayamıyor, adını değiştiremiyor,
+  silemiyor (404) ve filtreyle Alice'in oyunlarını göremiyor.
+- **Cascade tuzağı (SQL Server):** Kullanıcı → koleksiyon ve kullanıcı → oyun → bağlantı ilişkilerinin ikisi de
+  cascade olsaydı, kullanıcı silinince bağlantı tablosuna iki ayrı yoldan ulaşılırdı. SQL Server buna izin vermez
+  ("may cause cycles or multiple cascade paths"). Çözüm: kullanıcı → koleksiyon `Restrict`, hesap silinirken
+  koleksiyonlar aynı transaction içinde açıkça siliniyor. Bunu bir test doğruluyor.
+- **Benzersizlik iki katmanlı:** Servis önce "bu ad var mı?" diye bakar (kullanıcı dostu hata için). Aynı anda gelen
+  iki istek bu kontrolü birlikte geçebilir; o zaman `(UserId, Name)` benzersiz indeksi ikincisini durdurur ve
+  `DbUpdateException` yakalanıp aynı hata gösterilir. Karşılaştırma büyük/küçük harf duyarsız (veritabanı harmanlaması).
+- **Formdan oluşturma:** Oyun formundaki "Yeni koleksiyon" alanına virgülle ayrılmış adlar yazılabilir. Var olan bir
+  adı yazmak yeni kayıt açmaz, mevcut koleksiyona bağlar. İçe aktarmada da aynı mantık var: dosyadaki koleksiyon adları
+  kullanıcıda varsa ona bağlanır, yoksa bir kez oluşturulur ve sonraki oyunlar aynı kaydı kullanır (`CollectionSet`).
+- **Kod analizi kuralı CA1711:** .NET, sonu "Collection" ile biten tür adlarının gerçekten bir koleksiyon türü
+  olmasını bekler. Varlığın adı `GameCollection` oldu ve kural yalnızca bu tür için gerekçesiyle kapatıldı
+  (`SuppressMessage`). Kuralı projede tamamen kapatmak yerine tek yerde, açıklamalı olarak susturmak daha doğru.
+
+> **Mülakat sorusu:** "Çoka çok ilişkide sahipliği nasıl korursun?"
+> **Cevap:** İki taraf da aynı kullanıcıya ait olmalı. Bağlantıyı kurmadan önce koleksiyon kimliklerini kullanıcının
+> kendi koleksiyonları içinde arıyorum; listede yoksa reddediyorum. Sorgular da hep `UserId` ile başladığı için
+> başka birinin koleksiyon kimliğiyle filtrelemek boş sonuç döndürür, bilgi sızdırmaz.
+
 ---
 
 ## Kendi notlarım

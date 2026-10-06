@@ -40,6 +40,16 @@ public sealed class GameInput
     [MaxLength(MaxGenres, ErrorMessage = "En fazla 5 tür seçebilirsiniz.")]
     public List<int> GenreIds { get; set; } = [];
 
+    /// <summary>Kullanıcının mevcut koleksiyonlarından seçilenler (sahiplik serviste doğrulanır).</summary>
+    [Display(Name = "Koleksiyonlar")]
+    [MaxLength(CollectionRules.MaxPerGame, ErrorMessage = "Bir oyun en fazla 10 koleksiyonda olabilir.")]
+    public List<int> CollectionIds { get; set; } = [];
+
+    /// <summary>Virgülle ayrılmış yeni koleksiyon adları; kaydederken oluşturulur.</summary>
+    [Display(Name = "Yeni koleksiyon")]
+    [StringLength(500, ErrorMessage = "Yeni koleksiyon alanı en fazla {1} karakter olabilir.")]
+    public string? NewCollections { get; set; }
+
     [Display(Name = "Durum")]
     [Required(ErrorMessage = "Bir durum seçin.")]
     [EnumDataType(typeof(GameStatus), ErrorMessage = "Geçersiz durum.")]

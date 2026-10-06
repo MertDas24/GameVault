@@ -82,8 +82,9 @@ $env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/Game
 
 | Alan | İçerik |
 |---|---|
-| Kütüphane | Kapak odaklı kartlar; ada göre arama; durum, platform, tür ve favori filtreleri; 7 sıralama; sayfalama |
-| Oyunlar | Ad, kapak (8 hazır kapak ya da izinli https adresi), açıklama, platform, en fazla 5 tür, durum, süre, 1–10 puan, notlar, başlama, bitirme ve çıkış tarihleri, tahmini bitirme süresi, favori. Kütüphanede aynı adlı oyun varsa eklemeden önce uyarır. |
+| Kütüphane | Kapak odaklı kartlar; ada göre arama; durum, platform, tür, koleksiyon ve favori filtreleri; 7 sıralama; sayfalama |
+| Oyunlar | Ad, kapak (8 hazır kapak ya da izinli https adresi), açıklama, platform, en fazla 5 tür, durum, süre, 1–10 puan, notlar, başlama, bitirme ve çıkış tarihleri, tahmini bitirme süresi, favori, koleksiyonlar. Kütüphanede aynı adlı oyun varsa eklemeden önce uyarır. |
+| Koleksiyonlar | "Hafta sonu", "Arkadaşlarla" gibi kişisel listeler. Koleksiyonlar sayfasında ya da oyun formunda ad yazarak oluşturulur; bir oyun en fazla 10 koleksiyonda olabilir. Koleksiyonu yeniden adlandırmak ya da silmek oyunlara dokunmaz. |
 | RAWG araması | [RAWG](https://rawg.io)'da isimle arama; kapak, çıkış tarihi, platform ve türleri görüp bir sonucu seçerek ekleme formunu doldurma. Her kullanıcı bir RAWG oyununu yalnızca bir kez ekleyebilir. |
 | Ne oynasam? | Sıradaki oyunlardan (başlanmamış, ara verilmiş, isteğe bağlı olarak istek listesi) platform, tür ve en fazla tahmini süreye göre rastgele öneri. “Başka öner” son öneriyi atlar, “Oynamaya başla” oyunu “Oynuyorum” olarak işaretler. |
 | İstatistikler | Toplam oyun ve süre, ortalama puan, tamamlama oranı, durum dağılımı, son 12 ayda aylık başlanan ve bitirilen oyunlar, puan dağılımı, en çok kullanılan platform ve türler, en çok oynananlar. Grafikler sunucuda SVG olarak çizilir (grafik kütüphanesi ve satır içi stil yok); her birinin tablo görünümü vardır. |
@@ -145,6 +146,8 @@ erDiagram
     AspNetUsers ||--o{ UserSessions : "oturum açar"
     LibraryGames }o--|| Platforms : "oynanır"
     LibraryGames }o--o{ Genres : "etiketlenir"
+    AspNetUsers ||--o{ Collections : "sahip olur"
+    LibraryGames }o--o{ Collections : "gruplanır"
 
     LibraryGames {
         guid Id PK
@@ -160,9 +163,10 @@ erDiagram
     }
 ```
 
-Bir kullanıcı silindiğinde oyunları ve oturumları da silinir (cascade). Her kütüphane sorgusu `UserId` ile
+Bir kullanıcı silindiğinde oyunları, koleksiyonları ve oturumları da silinir. Her kütüphane sorgusu `UserId` ile
 filtrelenir ve bileşik indeksler `UserId` ile başlar: veri izolasyonu ve sorgu hızı aynı sütuna dayanır. `(UserId, RawgId)` üzerindeki filtreli benzersiz indeks, iki istek
-aynı anda gelse bile aynı RAWG oyununun iki kez eklenmesini engeller.
+aynı anda gelse bile aynı RAWG oyununun iki kez eklenmesini engeller. Koleksiyon adları kullanıcı başına benzersizdir
+(`(UserId, Name)`) ve bir oyun yalnızca sahibinin koleksiyonlarına bağlanabilir.
 
 Tasarım kararları ve gerekçeleri: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -175,11 +179,12 @@ tokenı ile korunan bir HTML form gönderimidir.
 |---|---|---|
 | `/` | herkese açık | Açılış sayfası |
 | `/Account/Register`, `/Account/Login`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Account/ConfirmEmail` | herkese açık | Kayıt ve giriş akışları |
-| `/Library` | kullanıcı | Oyunları arama, filtreleme, sıralama ve sayfalama (`?q=&status=&platform=&genre=&fav=&sort=&size=&page=`) |
+| `/Library` | kullanıcı | Oyunları arama, filtreleme, sıralama ve sayfalama (`?q=&status=&platform=&genre=&collection=&fav=&sort=&size=&page=`) |
 | `/Library/New`, `/Library/{id}`, `/Library/{id}/Edit`, `/Library/{id}/Delete` | kullanıcı (yalnızca sahibi) | Oyun ekleme, görüntüleme, düzenleme ve silme |
 | `/Library/Search?q=` · `/Library/New?rawgId=` | kullanıcı | RAWG'da arama ve seçilen sonuçla ekleme formunu doldurma |
 | `/Suggest?platform=&genre=&maxHours=&wishlist=` | kullanıcı | “Ne oynasam?” önerisi. `handler=Start` ile yapılan POST, oyunu “Oynuyorum” olarak işaretler. |
 | `/Stats` | kullanıcı | Kullanıcının kendi verisinden istatistikler |
+| `/Collections` | kullanıcı (yalnızca sahibi) | Koleksiyonları listeleme, oluşturma, yeniden adlandırma ve silme |
 | `/Account/Settings`, `/Account/Export`, `/Account/Import`, `/Account/Delete` | kullanıcı | Profil, parola, oturumlar, JSON dışa ve içe aktarma, hesap silme |
 | `/health` · `/health/live` | herkese açık | Hazırlık (veritabanı) ve canlılık kontrolü. Yalnızca `Healthy` ya da `Unhealthy` döner. |
 

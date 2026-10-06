@@ -262,13 +262,14 @@ public sealed class UserFlowTests(E2EFixture fixture) : IClassFixture<E2EFixture
         await page.GetByLabel("Nebula").CheckAsync();
         // Puan ve başlama tarihi: /Stats denetiminde grafiklerin (SVG + tablo) da çizilmesi için.
         await page.GetByLabel("Kişisel puan").SelectOptionAsync("8");
+        await page.GetByLabel("Koleksiyon oluştur").FillAsync("Erişilebilirlik, Denemeler");
         await page.GetByLabel("Başlama tarihi").FillAsync(DateTime.UtcNow.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
         await page.GetByRole(AriaRole.Button, new() { Name = "Kütüphaneye ekle" }).ClickAsync();
         await Audit("ayrıntı");
         await page.GetByRole(AriaRole.Link, new() { Name = "Sil…" }).ClickAsync();
         await Audit("silme onayı");
 
-        foreach (var url in new[] { "/Library", "/Stats", "/Suggest", "/Suggest?maxHours=1", "/Library/Search", "/Account/Settings", "/Account/Delete", "/Account/Export", "/Account/Import" })
+        foreach (var url in new[] { "/Library", "/Stats", "/Suggest", "/Suggest?maxHours=1", "/Library/Search", "/Account/Settings", "/Account/Delete", "/Account/Export", "/Account/Import", "/Collections" })
         {
             await page.GotoAsync(fixture.BaseUrl + url);
             await Audit(url);
@@ -283,6 +284,17 @@ public sealed class UserFlowTests(E2EFixture fixture) : IClassFixture<E2EFixture
         }
 
         await Audit("/Stats (tablolar açık)");
+
+        // Koleksiyonlar: düzenleme panelleri açıkken (yeniden adlandırma ve silme formları görünür).
+        await page.GotoAsync(fixture.BaseUrl + "/Collections");
+        Assert.Equal(2, await page.Locator("#collection-list > li").CountAsync());
+        foreach (var summary in await page.Locator("details.collection-edit > summary").AllAsync())
+        {
+            await summary.ClickAsync();
+        }
+
+        await Audit("/Collections (düzenleme açık)");
+        await Screenshot(page, "15-collections");
 
         await page.SetViewportSizeAsync(390, 844);
         await page.GotoAsync(fixture.BaseUrl + "/Library");

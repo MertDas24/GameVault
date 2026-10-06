@@ -20,6 +20,9 @@ public class LibraryGame
 
     public ICollection<Genre> Genres { get; set; } = new List<Genre>();
 
+    /// <summary>Kullanıcının bu oyunu eklediği koleksiyonlar (yalnızca aynı kullanıcıya ait olanlar).</summary>
+    public ICollection<GameCollection> Collections { get; set; } = new List<GameCollection>();
+
     public GameStatus Status { get; set; } = GameStatus.NotStarted;
     public int? Rating { get; set; }
     public int PlaytimeHours { get; set; }

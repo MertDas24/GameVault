@@ -80,8 +80,9 @@ What I focused on, beyond the CRUD:
 
 | Area | What you can do |
 |---|---|
-| Library | Cover-first cards, search by title, filter by status, platform, genre or favorite, 7 sort orders, pagination |
-| Games | Title, cover (8 built-in covers or an allow-listed https URL), description, platform, up to 5 genres, status, playtime, 1–10 rating, notes, start/finish/release dates, estimated hours to beat, favorite. Warns before adding a title that is already in the library. |
+| Library | Cover-first cards, search by title, filter by status, platform, genre, collection or favorite, 7 sort orders, pagination |
+| Games | Title, cover (8 built-in covers or an allow-listed https URL), description, platform, up to 5 genres, status, playtime, 1–10 rating, notes, start/finish/release dates, estimated hours to beat, favorite, collections. Warns before adding a title that is already in the library. |
+| Collections | Personal lists such as "Weekend" or "With friends". Create them on the collections page or by typing a name in the game form; a game can be in up to 10. Renaming or deleting a collection never touches the games. |
 | RAWG search | Search [RAWG](https://rawg.io) by title, see cover, release date, platforms and genres, then pick a result to prefill the add form. Each user can add a RAWG game only once. |
 | What should I play? | Random pick from the backlog (not started, on hold and optionally wishlist), filtered by platform, genre and max estimated hours. "Pick another" skips the last pick, and "Start playing" marks the game as playing. |
 | Statistics | Total games and hours, average rating, completion rate, status breakdown, started vs. finished games per month (last 12 months), rating distribution, top platforms and genres, most played. Charts are server-rendered SVG (no chart library, no inline styles), each with a table view. |
@@ -143,6 +144,8 @@ erDiagram
     AspNetUsers ||--o{ UserSessions : "signed in with"
     LibraryGames }o--|| Platforms : "played on"
     LibraryGames }o--o{ Genres : "tagged with"
+    AspNetUsers ||--o{ Collections : owns
+    LibraryGames }o--o{ Collections : "grouped in"
 
     LibraryGames {
         guid Id PK
@@ -158,9 +161,10 @@ erDiagram
     }
 ```
 
-Deleting a user cascades to their games and sessions. Every library query filters by `UserId`, and the composite
+Deleting a user removes their games, collections and sessions. Every library query filters by `UserId`, and the composite
 indexes start with `UserId`, so data isolation and query speed rely on the same column. A filtered unique index on
-`(UserId, RawgId)` stops the same RAWG game from being added twice, even when two requests race.
+`(UserId, RawgId)` stops the same RAWG game from being added twice, even when two requests race. Collection names are
+unique per user (`(UserId, Name)`), and a game can only be linked to its owner's collections.
 
 Design decisions and their reasons are listed in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -173,11 +177,12 @@ antiforgery token.
 |---|---|---|
 | `/` | anonymous | Landing page |
 | `/Account/Register`, `/Account/Login`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Account/ConfirmEmail` | anonymous | Sign-up and sign-in flows |
-| `/Library` | user | Search, filter, sort and paginate the user's games (`?q=&status=&platform=&genre=&fav=&sort=&size=&page=`) |
+| `/Library` | user | Search, filter, sort and paginate the user's games (`?q=&status=&platform=&genre=&collection=&fav=&sort=&size=&page=`) |
 | `/Library/New`, `/Library/{id}`, `/Library/{id}/Edit`, `/Library/{id}/Delete` | user (owner only) | Create, view, edit and delete a game |
 | `/Library/Search?q=` · `/Library/New?rawgId=` | user | Search RAWG, then prefill the add form from a result |
 | `/Suggest?platform=&genre=&maxHours=&wishlist=` | user | "What should I play?" suggestion. A POST with `handler=Start` marks the game as playing. |
 | `/Stats` | user | Statistics from the user's own data |
+| `/Collections` | user (owner only) | List, create, rename and delete collections |
 | `/Account/Settings`, `/Account/Export`, `/Account/Import`, `/Account/Delete` | user | Profile, password, sessions, JSON export and import, account deletion |
 | `/health` · `/health/live` | anonymous | Readiness check (database) and liveness check. They return only `Healthy` or `Unhealthy`. |
 

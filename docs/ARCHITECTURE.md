@@ -5,7 +5,7 @@
 Tek bir ASP.NET Core uygulaması (Razor Pages) ve tek bir SQL Server veritabanı. Mikroservis, ayrı API ya da SPA yoktur.
 
 ```
-GameVault.Entities    → EF Core varlıkları (ApplicationUser, LibraryGame, Genre, Platform, UserSession, RateLimitCounter)
+GameVault.Entities    → EF Core varlıkları (ApplicationUser, LibraryGame, Genre, Platform, GameCollection, UserSession, RateLimitCounter)
 GameVault.DataAccess  → DbContext, migration'lar, tasarım zamanı fabrikası
 GameVault.Models      → Form girdi modelleri (doğrulama öznitelikleri), sorgu normalleştirme, DTO'lar
 GameVault.Business    → Kütüphane, istatistik, hesap, oran sınırlama, e-posta, bakım servisleri
@@ -33,9 +33,12 @@ Katmanlı proje yapısı mevcut kod tabanından korunmuştur.
 | 11 | **Data Protection anahtarları veritabanında** | Tüm instance'lar aynı çerezleri ve sıfırlama tokenlarını çözebilir; yeniden başlatmada oturumlar düşmez. |
 | 12 | **Platform ve tür başvuru verisi migration ile ekleniyor** | Üretimde de gerekir. Ada göre idempotent eklenir, demo verisi değildir. |
 | 13 | **Tarihler UTC saklanır**, `Europe/Istanbul` ile gösterilir | `DateTime` değerleri okurken `Kind=Utc` işaretlenir. Gösterim saat dilimi `App:DisplayTimeZone` ile ayarlanır. Başlama/bitirme tarihleri `date` (saatsiz). |
-| 14 | **Sunucu harici URL indirmez** | Kapaklar yerel SVG'ler ya da izin listesindeki https adresleridir; SSRF yüzeyi yoktur. Dosya yükleme ilk sürümde yok. |
+| 14 | **Sunucu harici URL indirmez** | Kapaklar yerel SVG'ler ya da izin listesindeki https adresleridir; SSRF yüzeyi yoktur. Tek dosya yükleme JSON içe aktarmadır; dosya diske yazılmaz, akıştan okunur. |
 | 15 | **Varsayılan olarak kimlik doğrulama zorunlu** (fallback policy) | Yeni bir sayfa yanlışlıkla herkese açık kalmaz. Herkese açık sayfalar `[AllowAnonymous]` ile işaretlenir. |
 | 16 | **RAWG entegrasyonu Business katmanında, isteğe bağlı** | `GameCatalog`, `IHttpClientFactory` ile sabit bir https adresine istek atar (kullanıcı adres veremez, SSRF yüzeyi yoktur). RAWG yanıt modelleri `internal`; sayfalar yalnızca sağlayıcıdan bağımsız `CatalogGame` görür. RAWG verisi doğrudan kaydedilmez, formu doldurur ve normal doğrulamadan geçer. Zaman aşımı, sınırlı önbellek ve basit devre kesici sayesinde RAWG çökse de uygulama çalışır. Anahtar URL'de taşındığı için bu istemcinin istek logları kapalıdır. Önbellek instance başınadır; birden fazla instance'ta her biri kendi önbelleğini tutar (kabul edilen ödünleşim). |
+| 17 | **Grafikler sunucuda SVG olarak çizilir** (grafik kütüphanesi yok) | CSP satır içi stile ve dış betiğe izin vermez; çoğu grafik kütüphanesi satır içi stil yazar. İki basit sütun grafiği için Razor + SVG yeterli; her grafiğin tablo görünümü var. |
+| 18 | **İçe aktarma yalnızca uygulamanın kendi biçimini kabul eder** (`gamevault-export/v1`) | Dosyadaki kimlik ve sahip alanları okunmaz; her oyun formla aynı doğrulamadan geçer; aynı ad + platform atlanır (tekrar yüklemek güvenli); geçerli oyunlar tek transaction ile yazılır. İstek sınırı yalnızca bu sayfada 4 MB. |
+| 19 | **Koleksiyonlar kullanıcıya ait, oyunlarla N—N** | Türler ortak başvuru verisidir; koleksiyonlar kişiseldir. Kullanıcı → koleksiyon ilişkisi cascade değil (`Restrict`): kullanıcı → oyun → bağlantı yoluyla birlikte SQL Server "birden çok cascade yolu" hatası verirdi. Hesap silinirken koleksiyonlar aynı transaction içinde açıkça silinir. |
 
 ## İstek akışı
 
@@ -51,5 +54,6 @@ ForwardedHeaders (yalnızca tanımlı proxy) → ExceptionHandler/HSTS (Producti
 - `AspNetUsers` (Identity) 1—N `LibraryGames` (**cascade delete**)
 - `AspNetUsers` 1—N `UserSessions` (**cascade delete**)
 - `LibraryGames` N—1 `Platforms` (restrict), N—N `Genres` (`LibraryGameGenres`, oyun silinince cascade)
-- Kısıtlar: puan 1–10, süre 0–100000, durum 0–5 (CHECK); platform ve tür adları benzersiz
+- `AspNetUsers` 1—N `Collections` (restrict; hesap silmede açıkça silinir), `LibraryGames` N—N `Collections` (`LibraryGameCollections`, oyun ya da koleksiyon silinince bağlantı cascade)
+- Kısıtlar: puan 1–10, süre 0–100000, durum 0–5 (CHECK); platform ve tür adları benzersiz; koleksiyon adı kullanıcı başına benzersiz `(UserId, Name)`
 - İndeksler: `(UserId, DateAdded)`, `(UserId, Title)`, `(UserId, Status)`, `(UserId, IsFavorite)`

@@ -548,3 +548,24 @@ progress::-moz-progress-bar { background: linear-gradient(90deg, var(--accent), 
     .swatch.series-2 { background: GrayText; }
     .chart-tick, .chart-label { fill: CanvasText; }
 }
+
+/* ---------- Koleksiyonlar ---------- */
+.collections-layout { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 2fr); gap: 1rem; align-items: start; }
+@media (max-width: 900px) { .collections-layout { grid-template-columns: 1fr; } }
+.collection-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.collection-list > li { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .65rem .85rem; background: var(--bg-elevated); }
+.collection-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.collection-name { font-weight: 600; }
+.collection-edit { margin-top: .35rem; }
+.collection-edit summary { cursor: pointer; color: var(--accent-2); font-size: .9rem; width: fit-content; }
+.collection-edit[open] { display: grid; gap: .6rem; }
+.collection-edit[open] summary { margin-bottom: .1rem; }
+.inline-form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.inline-form input { flex: 1 1 12rem; min-width: 0; }
+.field-nested { margin-top: .75rem; }
+.tag-list { list-style: none; margin: .15rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .35rem; }
+.tag {
+    display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .85rem; font-weight: 500;
+    background: var(--accent-soft); border: 1px solid var(--border-strong); color: var(--text); text-decoration: none;
+}
+.tag:hover { border-color: var(--accent-2); color: #fff; }

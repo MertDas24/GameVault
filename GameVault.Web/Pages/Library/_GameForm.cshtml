@@ -54,6 +54,29 @@
             <span asp-validation-for="Input.GenreIds" id="Input_GenreIds-error" class="field-error"></span>
         </fieldset>
 
+        <fieldset class="field" aria-describedby="@(ErrorId("Input.CollectionIds") ?? "collection-hint")">
+            <legend>Koleksiyonlar <span class="optional">(isteğe bağlı)</span></legend>
+            <p id="collection-hint" class="hint">Kendi listelerin, ör. “Hafta sonu”, “Arkadaşlarla”. Bir oyun birden fazla koleksiyonda olabilir.</p>
+            @if (Model.Collections.Count > 0)
+            {
+                <div class="chip-group">
+                    @foreach (var c in Model.Collections)
+                    {
+                        <label class="chip">
+                            <input type="checkbox" name="Input.CollectionIds" value="@c.Id" checked="@input.CollectionIds.Contains(c.Id)">
+                            <span>@c.Name</span>
+                        </label>
+                    }
+                </div>
+            }
+            <span asp-validation-for="Input.CollectionIds" id="Input_CollectionIds-error" class="field-error"></span>
+            <div class="field field-nested">
+                <label asp-for="Input.NewCollections">@(Model.Collections.Count > 0 ? "Yeni koleksiyon ekle" : "Koleksiyon oluştur") <span class="optional">(virgülle ayırabilirsin)</span></label>
+                <input asp-for="Input.NewCollections" maxlength="500" autocomplete="off" aria-describedby="@(ErrorId("Input.NewCollections"))">
+                <span asp-validation-for="Input.NewCollections" id="Input_NewCollections-error" class="field-error"></span>
+            </div>
+        </fieldset>
+
         <div class="field-row">
             <div class="field">
                 <label asp-for="Input.PlaytimeHours">Oynama süresi (saat)</label>

@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GameVault.Web.Pages.Library;
 
-public sealed class EditModel(LibraryService library, ReferenceDataService referenceData) : GameFormPageModel(referenceData)
+public sealed class EditModel(LibraryService library, ReferenceDataService referenceData, CollectionService collections)
+    : GameFormPageModel(referenceData, collections)
 {
     public Guid Id { get; private set; }
 

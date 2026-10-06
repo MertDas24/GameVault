@@ -1,0 +1,68 @@
+@page "/Collections"
+@model GameVault.Web.Pages.Collections.IndexModel
+@{
+    ViewData["Title"] = "Koleksiyonlar";
+    ViewData["Section"] = "collections";
+    string? nameError = ViewData.ModelState.TryGetValue("name", out var entry) && entry.Errors.Count > 0 ? entry.Errors[0].ErrorMessage : null;
+}
+<header class="page-header">
+    <div>
+        <h1>Koleksiyonlar</h1>
+        <p class="muted">Oyunlarını kendi listelerinde grupla. Bir oyun birden fazla koleksiyonda olabilir; koleksiyonu silmek oyunları silmez.</p>
+    </div>
+</header>
+
+<div class="collections-layout">
+    <section class="panel" aria-labelledby="create-heading">
+        <h2 id="create-heading">Yeni koleksiyon</h2>
+        <form method="post" asp-page-handler="Create" class="form" data-busy-form novalidate>
+            <div class="field">
+                <label for="new-collection-name">Ad</label>
+                <input id="new-collection-name" name="name" value="@Model.NewName" required maxlength="@CollectionRules.NameMaxLength" autocomplete="off"
+                       aria-invalid="@(nameError is not null ? "true" : null)" aria-describedby="@(nameError is not null ? "new-collection-error" : "new-collection-hint")">
+                <p class="hint" id="new-collection-hint">En fazla @CollectionRules.NameMaxLength karakter, virgül olmadan. En fazla @CollectionRules.MaxPerUser koleksiyon.</p>
+                @if (nameError is not null)
+                {
+                    <span class="field-error" id="new-collection-error">@nameError</span>
+                }
+            </div>
+            <button type="submit" class="btn btn-primary" data-busy-text="Oluşturuluyor…"><partial name="_Icon" model="@("plus")" /> Oluştur</button>
+        </form>
+    </section>
+
+    <section class="panel" aria-labelledby="list-heading">
+        <h2 id="list-heading">Koleksiyonların (@Model.Items.Count)</h2>
+        @if (Model.Items.Count == 0)
+        {
+            <p class="muted">Henüz koleksiyonun yok. Burada ya da oyun eklerken/düzenlerken oluşturabilirsin.</p>
+        }
+        else
+        {
+            <ul class="collection-list" id="collection-list">
+                @foreach (var c in Model.Items)
+                {
+                    <li>
+                        <div class="collection-row">
+                            <a class="collection-name break-anywhere" href="/Library?collection=@c.Id">@c.Name</a>
+                            <span class="rank-value">@Display.Number(c.GameCount) oyun</span>
+                        </div>
+                        <details class="collection-edit">
+                            <summary>Düzenle<span class="visually-hidden">: @c.Name</span></summary>
+                            <form method="post" asp-page-handler="Rename" asp-route-id="@c.Id" class="inline-form">
+                                <label class="visually-hidden" for="rename-@c.Id">“@c.Name” için yeni ad</label>
+                                <input id="rename-@c.Id" name="name" value="@c.Name" required maxlength="@CollectionRules.NameMaxLength" autocomplete="off">
+                                <button type="submit" class="btn btn-secondary btn-sm">Adı kaydet</button>
+                            </form>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@c.Id">
+                                <button type="submit" class="btn btn-danger-ghost btn-sm">
+                                    <partial name="_Icon" model="@("trash")" /> Koleksiyonu sil<span class="visually-hidden">: @c.Name</span>
+                                </button>
+                                <p class="hint">Oyunlar kütüphanende kalır.</p>
+                            </form>
+                        </details>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</div>

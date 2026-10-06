@@ -32,6 +32,20 @@
                 <div><dt>Tahmini süre</dt><dd>~@Display.Number(estimated) saat</dd></div>
             }
             <div><dt>Türler</dt><dd>@(g.Genres.Count > 0 ? string.Join(", ", g.Genres.Select(x => x.Name)) : "Belirtilmedi")</dd></div>
+            @if (g.Collections is { Count: > 0 } inCollections)
+            {
+                <div>
+                    <dt>Koleksiyonlar</dt>
+                    <dd>
+                        <ul class="tag-list">
+                            @foreach (var c in inCollections)
+                            {
+                                <li><a class="tag" href="/Library?collection=@c.Id">@c.Name</a></li>
+                            }
+                        </ul>
+                    </dd>
+                </div>
+            }
             @if (g.ReleaseDate is { } released)
             {
                 <div><dt>Çıkış tarihi</dt><dd>@Display.Date(released)</dd></div>

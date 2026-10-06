@@ -17,7 +17,10 @@
         <h1>Kütüphane</h1>
         <p class="muted">@(Model.LibraryTotal == 0 ? "Henüz oyun eklemedin." : $"Toplam {Display.Number(Model.LibraryTotal)} oyun")</p>
     </div>
-    <a class="btn btn-primary" href="/Library/New"><partial name="_Icon" model="@("plus")" /> Oyun ekle</a>
+    <div class="button-row">
+        <a class="btn btn-secondary" href="/Collections"><partial name="_Icon" model="@("folder")" /> Koleksiyonlar</a>
+        <a class="btn btn-primary" href="/Library/New"><partial name="_Icon" model="@("plus")" /> Oyun ekle</a>
+    </div>
 </header>
 
 @if (Model.LibraryTotal == 0)
@@ -72,6 +75,19 @@ else
                 }
             </select>
         </div>
+        @if (Model.Collections.Count > 0 || q.CollectionId is not null)
+        {
+            <div class="field">
+                <label for="f-collection">Koleksiyon</label>
+                <select id="f-collection" name="collection">
+                    <option value="">Tümü</option>
+                    @foreach (var c in Model.Collections)
+                    {
+                        <option value="@c.Id" selected="@(q.CollectionId == c.Id)">@c.Name</option>
+                    }
+                </select>
+            </div>
+        }
         <div class="field">
             <label for="f-sort">Sırala</label>
             <select id="f-sort" name="sort">

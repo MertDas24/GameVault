@@ -120,6 +120,18 @@ public sealed class ImportService(GameVaultDbContext db, LibraryService library,
             genreIds.Add(genreId);
         }
 
+        var collections = new List<string>();
+        foreach (var name in game.Collections ?? [])
+        {
+            var normalized = CollectionRules.Normalize(name ?? string.Empty);
+            if (CollectionRules.NameError(normalized) is { } collectionError)
+            {
+                return (null, Error($"Geçersiz koleksiyon adı “{name}”: {collectionError}"));
+            }
+
+            collections.Add(normalized);
+        }
+
         GameStatus status = GameStatus.NotStarted;
         if (!string.IsNullOrWhiteSpace(game.Status))
         {
@@ -149,7 +161,9 @@ public sealed class ImportService(GameVaultDbContext db, LibraryService library,
             CompletionDate = game.CompletionDate,
             ReleaseDate = game.ReleaseDate,
             EstimatedHours = game.EstimatedHours,
-            RawgId = game.RawgId
+            RawgId = game.RawgId,
+            // Koleksiyonlar ada göre eşleşir: kullanıcıda varsa ona bağlanır, yoksa oluşturulur.
+            NewCollections = string.Join(',', collections)
         };
 
         return (new ImportCandidate(position, input, ToUtc(game.DateAddedUtc)), null);
@@ -178,6 +192,7 @@ public sealed class ImportService(GameVaultDbContext db, LibraryService library,
         public string? CoverImageUrl { get; set; }
         public string? Platform { get; set; }
         public List<string?>? Genres { get; set; }
+        public List<string?>? Collections { get; set; }
         public string? Status { get; set; }
         public int? Rating { get; set; }
         public int? PlaytimeHours { get; set; }

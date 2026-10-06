@@ -54,6 +54,9 @@ public sealed class DemoDataSeeder(GameVaultDbContext db, UserManager<Applicatio
         var genres = await db.Genres.ToDictionaryAsync(g => g.Name, ct);
 
         var today = DateOnly.FromDateTime(now);
+        // Kurgusal koleksiyonlar: oyunların sırasına göre (0, 3 → uzun; 1, 6 → kısa) bağlanır.
+        var longOnes = new GameCollection { UserId = user.Id, Name = "Uzun soluklu", CreatedAtUtc = now };
+        var shortOnes = new GameCollection { UserId = user.Id, Name = "Kısa ve tatlı", CreatedAtUtc = now };
         var i = 0;
         foreach (var g in Games)
         {
@@ -67,6 +70,7 @@ public sealed class DemoDataSeeder(GameVaultDbContext db, UserManager<Applicatio
                 CoverImageUrl = g.Cover.Length > 0 ? $"/covers/{g.Cover}.svg" : null,
                 PlatformId = platforms[g.Platform].Id,
                 Genres = g.Genres.Select(name => genres[name]).ToList(),
+                Collections = i switch { 0 or 3 => [longOnes], 1 or 6 => [shortOnes], _ => [] },
                 Status = g.Status,
                 PlaytimeHours = g.Hours,
                 Rating = g.Rating,

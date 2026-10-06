@@ -32,7 +32,8 @@ public sealed record GameDetails(
     DateTime UpdatedAtUtc,
     DateOnly? ReleaseDate = null,
     int? RawgId = null,
-    int? EstimatedHours = null);
+    int? EstimatedHours = null,
+    IReadOnlyList<ReferenceItem>? Collections = null);
 
 public sealed record ReferenceItem(int Id, string Name);
 
@@ -45,3 +46,6 @@ public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSi
     public bool HasPrevious => Page > 1;
     public bool HasNext => Page < TotalPages;
 }
+
+/// <summary>Koleksiyonlar sayfasındaki bir satır.</summary>
+public sealed record CollectionSummary(int Id, string Name, int GameCount);

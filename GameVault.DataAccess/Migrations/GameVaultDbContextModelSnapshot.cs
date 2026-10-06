@@ -95,6 +95,33 @@ namespace GameVault.DataAccess.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("GameVault.Entities.GameCollection", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Collections");
+                });
+
             modelBuilder.Entity("GameVault.Entities.Genre", b =>
                 {
                     b.Property<int>("Id")
@@ -347,6 +374,21 @@ namespace GameVault.DataAccess.Migrations
                     b.ToTable("UserSessions");
                 });
 
+            modelBuilder.Entity("LibraryGameCollections", b =>
+                {
+                    b.Property<Guid>("LibraryGameId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CollectionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LibraryGameId", "CollectionId");
+
+                    b.HasIndex("CollectionId");
+
+                    b.ToTable("LibraryGameCollections");
+                });
+
             modelBuilder.Entity("LibraryGameGenres", b =>
                 {
                     b.Property<Guid>("LibraryGameId")
@@ -512,6 +554,15 @@ namespace GameVault.DataAccess.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("GameVault.Entities.GameCollection", b =>
+                {
+                    b.HasOne("GameVault.Entities.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("GameVault.Entities.LibraryGame", b =>
                 {
                     b.HasOne("GameVault.Entities.Platform", "Platform")
@@ -536,6 +587,21 @@ namespace GameVault.DataAccess.Migrations
                     b.HasOne("GameVault.Entities.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LibraryGameCollections", b =>
+                {
+                    b.HasOne("GameVault.Entities.GameCollection", null)
+                        .WithMany()
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GameVault.Entities.LibraryGame", null)
+                        .WithMany()
+                        .HasForeignKey("LibraryGameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -40,6 +40,7 @@ public sealed record LibraryQuery
     public GameStatus? Status { get; init; }
     public int? PlatformId { get; init; }
     public int? GenreId { get; init; }
+    public int? CollectionId { get; init; }
     public bool FavoritesOnly { get; init; }
     public LibrarySort Sort { get; init; } = LibrarySort.AddedDesc;
     public int Page { get; init; } = 1;
@@ -48,11 +49,11 @@ public sealed record LibraryQuery
     public string SortKey => SortKeys.First(kv => kv.Value == Sort).Key;
 
     public bool HasFilters =>
-        Search is not null || Status is not null || PlatformId is not null || GenreId is not null || FavoritesOnly;
+        Search is not null || Status is not null || PlatformId is not null || GenreId is not null || CollectionId is not null || FavoritesOnly;
 
     public static LibraryQuery FromRaw(
         string? search, string? status, string? platform, string? genre,
-        string? favorites, string? sort, string? page, string? pageSize)
+        string? favorites, string? sort, string? page, string? pageSize, string? collection = null)
     {
         var trimmed = search?.Trim();
         if (string.IsNullOrEmpty(trimmed))
@@ -70,6 +71,7 @@ public sealed record LibraryQuery
             Status = StatusLabels.FromKey(status),
             PlatformId = ParsePositive(platform),
             GenreId = ParsePositive(genre),
+            CollectionId = ParsePositive(collection),
             FavoritesOnly = favorites is "1" or "true" or "on",
             Sort = sort is not null && SortKeys.TryGetValue(sort, out var s) ? s : LibrarySort.AddedDesc,
             Page = Math.Clamp(ParsePositive(page) ?? 1, 1, MaxPage),
