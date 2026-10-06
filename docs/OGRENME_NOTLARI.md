@@ -530,8 +530,20 @@ doğrulayıcı uygulamanın (Google/Microsoft Authenticator vb.) ürettiği 6 ha
   uygulamasını ([Totp.cs](../tests/GameVault.Tests/Infrastructure/Totp.cs)) kullanıyor. Böylece "standart bir
   doğrulayıcı uygulama bu QR'dan geçerli kod üretebilir mi?" sorusu da test edilmiş oluyor. Kod analizi aracı SHA-1'i
   "zayıf" diye işaretledi; HMAC-SHA1 standardın gereği olduğu için kural yalnızca o metotta gerekçesiyle kapatıldı.
-- **Bilinen sınırlama:** TOTP anahtarı ve kurtarma kodları veritabanında şifresiz (Identity varsayılanı). Tehdit
-  modelinde artık risk olarak yazıldı.
+- **Sırları düz metin saklamamak (sonradan eklendi):** Identity, TOTP anahtarını ve kurtarma kodlarını varsayılan olarak
+  veritabanında düz metin tutar. Veritabanı dökümünü ele geçiren biri ikinci faktörü de almış olurdu. Çözüm, Identity'nin
+  kullanıcı deposundan türetilen küçük bir sınıf ([AppUserStore.cs](../GameVault.Web/Infrastructure/AppUserStore.cs)):
+  - **TOTP anahtarı şifrelenir** (Data Protection). Özetlenemez, çünkü sunucu her girişte kodu hesaplamak için anahtarın
+    kendisine ihtiyaç duyar. Data Protection anahtarları üretimde veritabanı dışındaki bir sertifikayla korunur.
+  - **Kurtarma kodları özetlenir** (PBKDF2-SHA256, kullanıcıya özel tuz, 100.000 tekrar). Bunları geri okumaya hiç gerek
+    yok, sadece karşılaştırıyoruz; parola gibi. Tuz kod kümesi başına tek olduğu için girilen kod bir kez özetlenip on
+    özetle karşılaştırılır (~50 ms). Bilinçli olarak Data Protection'a bağlı **değil**: anahtar halkası bir gün kaybolursa
+    uygulamadaki kod çalışmaz ama kurtarma kodu çalışır ve kullanıcı hesabından kilitlenmez. "Riski azaltırken zararı
+    da en aza indirmek" buydu.
+  - **Tekrar kullanım koruması** kodun kendisini değil SHA-256 özetini saklar.
+  - **Eski kayıtlar** (düz metin) ilk okunduklarında yeni biçime çevrilir; kullanıcı hiçbir şey fark etmez.
+  - Testler veritabanında okunabilir sır kalmadığını, eski kayıtların çalıştığını ve şifre çözülemezse kurtarma
+    koduyla girilebildiğini doğruluyor.
 
 > **Mülakat sorusu:** "2FA'yı nasıl uyguladın, nelere dikkat ettin?"
 > **Cevap:** Identity'nin TOTP sağlayıcısını kullandım; kriptoyu kendim yazmadım. Üzerine dört şey ekledim: kodun

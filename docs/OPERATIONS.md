@@ -157,7 +157,10 @@ shred -u dp.key                                                         # açık
   (ör. anahtar kasası) saklayın.
 - **Anahtar kaybı ya da değişimi:** Tüm oturumlar kapanır (kullanıcılar yeniden giriş yapar), bekleyen parola sıfırlama
   ve e-posta doğrulama bağlantıları geçersiz olur ve outbox'ta bekleyen e-postaların gövdesi çözülemediği için bu işler
-  `Failed` olarak kapanır. Kullanıcı verisi (kütüphane, hesaplar, parola özetleri) kaybolmaz.
+  `Failed` olarak kapanır. İki adımlı doğrulama açık kullanıcıların doğrulayıcı anahtarı çözülemez: uygulamadaki kodla
+  giremezler, ama kurtarma kodları Data Protection'a bağlı olmadığı için çalışır; kullanıcı kurtarma koduyla girip 2FA'yı
+  yeniden kurar. Bu durumda uygulama her kullanıcı için bir uyarı logu yazar (anahtar değeri loglanmaz). Kullanıcı verisi
+  (kütüphane, hesaplar, parola özetleri) kaybolmaz.
 
 ## Yedekleme ve geri yükleme
 

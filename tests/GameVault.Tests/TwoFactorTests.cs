@@ -261,4 +261,107 @@ public sealed class TwoFactorTests(GameVaultFactory factory) : IClassFixture<Gam
             newer.AssertRedirectTo("/Library");
         }
     }
+
+    // ---------- Saklama biçimi (AppUserStore) ----------
+
+    private const string Provider = "[AspNetUserStore]";
+
+    private Task<string?> StoredTokenAsync(string email, string name) =>
+        factory.WithDbAsync(db => db.UserTokens
+            .Where(t => t.LoginProvider == Provider && t.Name == name && db.Users.Any(u => u.Id == t.UserId && u.Email == email))
+            .Select(t => t.Value).SingleOrDefaultAsync());
+
+    private Task SetStoredTokenAsync(string email, string name, string value) =>
+        factory.WithDbAsync(async db =>
+        {
+            var userId = await db.Users.Where(u => u.Email == email).Select(u => u.Id).SingleAsync();
+            var token = await db.UserTokens.SingleAsync(t => t.UserId == userId && t.LoginProvider == Provider && t.Name == name);
+            token.Value = value;
+            await db.SaveChangesAsync();
+        });
+
+    [Fact]
+    public async Task Database_holds_no_readable_authenticator_key_or_recovery_code()
+    {
+        var (client, email) = await NewUserAsync();
+        using (client)
+        {
+            var state = await EnableAsync(client);
+
+            var key = await StoredTokenAsync(email, "AuthenticatorKey");
+            Assert.StartsWith("dp1:", key, StringComparison.Ordinal);
+            Assert.DoesNotContain(state.Key, key!, StringComparison.OrdinalIgnoreCase);
+
+            var codes = await StoredTokenAsync(email, "RecoveryCodes");
+            Assert.StartsWith("pbkdf2-sha256$", codes, StringComparison.Ordinal);
+            Assert.All(state.RecoveryCodes, c => Assert.DoesNotContain(c, codes!, StringComparison.OrdinalIgnoreCase));
+
+            // Tekrar kullanım koruması da kodun kendisini değil özetini tutar.
+            var lastUsed = await factory.WithDbAsync(db => db.UserTokens
+                .Where(t => t.LoginProvider == "GameVault" && t.Name == "LastAuthenticatorCode" && db.Users.Any(u => u.Id == t.UserId && u.Email == email))
+                .Select(t => t.Value).SingleAsync());
+            var expectedHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(state.UsedCode)));
+            Assert.StartsWith(expectedHash + "|", lastUsed, StringComparison.Ordinal);
+
+            // Şifreli saklama girişi bozmaz.
+            await client.LogoutAsync();
+            await PasswordStepAsync(client, email);
+            (await SubmitCodeAsync(client, FreshCode(state))).AssertRedirectTo("/Library");
+        }
+    }
+
+    [Fact]
+    public async Task Legacy_plaintext_secrets_keep_working_and_are_converted_on_first_use()
+    {
+        var (client, email) = await NewUserAsync();
+        using (client)
+        {
+            await EnableAsync(client);
+            // Bu değişiklikten önce kurulmuş bir hesabı taklit et: Identity'nin varsayılan düz metin biçimi.
+            const string legacyKey = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
+            await SetStoredTokenAsync(email, "AuthenticatorKey", legacyKey);
+            await SetStoredTokenAsync(email, "RecoveryCodes", "BCDFG-HJKMN;PQRTV-WXY23");
+
+            await client.LogoutAsync();
+            await PasswordStepAsync(client, email);
+            (await SubmitCodeAsync(client, Totp.Now(legacyKey))).AssertRedirectTo("/Library");
+            Assert.StartsWith("dp1:", await StoredTokenAsync(email, "AuthenticatorKey"), StringComparison.Ordinal);
+
+            await client.LogoutAsync();
+            await PasswordStepAsync(client, email);
+            var recovery = await client.PostFormAsync("/Account/LoginWithRecoveryCode?returnUrl=%2FLibrary",
+                [new("Input.Code", "pqrtv-wxy23")], "/Account/LoginWithRecoveryCode");
+            recovery.AssertRedirectTo("/Library");
+
+            var codes = await StoredTokenAsync(email, "RecoveryCodes");
+            Assert.StartsWith("pbkdf2-sha256$", codes, StringComparison.Ordinal);
+            Assert.DoesNotContain("BCDFG", codes!, StringComparison.Ordinal);
+            Assert.Single(codes!.Split('$')[3].Split(','));
+        }
+    }
+
+    [Fact]
+    public async Task An_undecryptable_key_does_not_lock_the_user_out()
+    {
+        var (client, email) = await NewUserAsync();
+        using (client)
+        {
+            var state = await EnableAsync(client);
+            // Data Protection anahtar halkası kaybolmuş gibi: kayıt artık çözülemiyor.
+            await SetStoredTokenAsync(email, "AuthenticatorKey", "dp1:CfDJ8bozuk-ve-cozulemeyen-veri");
+
+            await client.LogoutAsync();
+            await PasswordStepAsync(client, email);
+            var totp = await SubmitCodeAsync(client, FreshCode(state));
+            Assert.Equal(HttpStatusCode.OK, totp.StatusCode);
+
+            // Kurtarma kodları Data Protection'a bağlı değil: kullanıcı girer ve 2FA'yı yeniden kurabilir.
+            var recovery = await client.PostFormAsync("/Account/LoginWithRecoveryCode?returnUrl=%2FLibrary",
+                [new("Input.Code", state.RecoveryCodes[0])], "/Account/LoginWithRecoveryCode");
+            recovery.AssertRedirectTo("/Library");
+            var (page, _) = await client.GetPageAsync("/Account/TwoFactor");
+            Assert.Equal(HttpStatusCode.OK, page.StatusCode);
+            Assert.Contains(factory.Logs.Lines, m => m.Contains("doğrulayıcı anahtarı çözülemedi", StringComparison.Ordinal));
+        }
+    }
 }

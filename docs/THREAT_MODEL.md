@@ -47,6 +47,7 @@ güvenli olduğu anlamına gelmez. Bağımsız bir güvenlik incelemesi yapılma
 | Çalınmış parola (credential stuffing) | İsteğe bağlı TOTP iki adımlı doğrulama; ikinci adım ayrı, 5 dk ömürlü şifreli ara çerezle; parola tek başına oturum açtırmaz | `TwoFactorTests.Login_requires_a_valid_code_*`, E2E 2FA testi |
 | 2FA kodu tahmini | 5 hatalı denemede 15 dk hesap kilidi; parolayı yeniden girmek sayacı sıfırlamaz; IP ve hesap bazlı oran sınırı | `TwoFactorTests.Five_wrong_codes_lock_*` |
 | TOTP kodunun tekrar kullanımı | Son başarılı kod 5 dk boyunca reddedilir (`TotpReplayGuard`) | `TwoFactorTests.A_code_that_was_already_used_is_rejected` |
+| Veritabanı dökümünden 2FA sırlarını okuma | TOTP anahtarı Data Protection ile şifreli (sertifika veritabanı dışında); kurtarma kodları kullanıcıya özel tuzlu PBKDF2-SHA256 (100.000 tekrar) özetleri; son kullanılan kodun yalnızca SHA-256 özeti; eski düz metin kayıtlar ilk okumada dönüştürülür | `TwoFactorTests.Database_holds_no_readable_*`, `TwoFactorTests.Legacy_plaintext_*`, `TwoFactorTests.An_undecryptable_key_*` |
 | Çalınmış oturumla 2FA'yı açma/kapatma | Açma, kapatma ve kurtarma kodu yenileme parola ister; açınca diğer oturumlar kapatılır; sahibine e-posta gider | `TwoFactorTests.Disabling_requires_*`, `TwoFactorTests.Enabling_signs_out_*` |
 | Açık yönlendirme | `returnUrl` yalnızca `Url.IsLocalUrl` ise kullanılır | `AuthTests.Login_ignores_external_return_urls` |
 | Sıfırlama bağlantısı zehirleme (Host başlığı) | Bağlantı `App:PublicBaseUrl` ile kurulur | `PasswordResetTests.Reset_link_uses_configured_public_base_url...` |
@@ -66,6 +67,6 @@ güvenli olduğu anlamına gelmez. Bağımsız bir güvenlik incelemesi yapılma
 - **E-posta teslimi "en az bir kez"dir:** Nadir bir çökme durumunda aynı e-posta (aynı Message-ID ile) iki kez gidebilir.
 - **Migration arşivi (`Legacy_*` tabloları)** eski şemadan yükseltilen veritabanlarında eski katalog verisini tutar. Kullanıcının arşiv satırları hesap silmede silinir; ortak katalog elle kaldırılana kadar kalır.
 - **İki adımlı doğrulama isteğe bağlıdır.** Açmayan kullanıcı için parola tek faktördür.
-- **TOTP anahtarı ve kurtarma kodları veritabanında şifresiz durur** (Identity varsayılanı, `AspNetUserTokens`). Veritabanını okuyabilen biri ikinci faktörü de elde eder; parola özetleri ise yine korunur. Identity'nin kişisel veri koruması (`ProtectPersonalData`) ile şifrelenebilir; bu sürümde uygulanmadı.
+- **2FA sırları sertifikayla birlikte ele geçirilirse:** TOTP anahtarları Data Protection ile şifreli saklanır; veritabanı ve Data Protection sertifikası birlikte sızarsa çözülebilir (çerez ve tokenlar için de geçerli olan risk). Kurtarma kodları tek yönlü özet (PBKDF2) olduğundan bu durumda da okunamaz.
 - **"Bu cihazı hatırla" yoktur:** 2FA açık kullanıcı her girişte kod girer (bilinçli tercih; ek bir kalıcı çerez yok).
 - **Kapak izin listesindeki alan adları** tarayıcıya kullanıcının IP adresini gösterir. Yalnızca güvenilen alan adları eklenmelidir.

@@ -93,6 +93,8 @@ public static class ServiceRegistration
                 o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             })
             .AddEntityFrameworkStores<GameVaultDbContext>()
+            // Varsayılan deponun yerine: 2FA anahtarı şifreli, kurtarma kodları özetlenmiş saklanır (bkz. AppUserStore).
+            .AddUserStore<AppUserStore>()
             .AddSignInManager<AppSignInManager>()
             .AddDefaultTokenProviders()
             .AddTokenProvider<EmailConfirmationTokenProvider>(EmailConfirmationTokenProvider.ProviderName)
