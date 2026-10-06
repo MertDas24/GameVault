@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using GameVault.Business.Covers;
 using GameVault.DataAccess;
 using GameVault.Entities;
+using GameVault.Models.Account;
 using GameVault.Models.Library;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -239,6 +240,91 @@ public sealed class LibraryService(
 
     public const string DuplicateRawgGameError = "Bu oyun zaten kütüphanende.";
 
+    /// <summary>
+    /// Dosyadan gelen oyunları ekler. Her aday, formla eklenen oyunlarla aynı kurallarla doğrulanır.
+    /// Kütüphanede (ya da dosyanın önceki satırlarında) aynı RAWG kimliği veya aynı ad + platform varsa
+    /// oyun atlanır; böylece aynı dosya iki kez yüklense de kopya oluşmaz. Geçerli oyunlar tek bir
+    /// SaveChanges ile (tek transaction) eklenir. <paramref name="dryRun"/> true ise hiçbir şey yazılmaz.
+    /// </summary>
+    public async Task<OperationResult<ImportResult>> ImportAsync(
+        Guid userId, IReadOnlyList<ImportCandidate> candidates, IReadOnlyList<ImportIssue> parseErrors, bool dryRun, CancellationToken ct = default)
+    {
+        var existing = await OwnedBy(userId)
+            .AsNoTracking()
+            .Select(g => new { g.Title, g.PlatformId, g.RawgId })
+            .ToListAsync(ct);
+
+        var titleKeys = existing.Select(g => TitleKey(g.Title, g.PlatformId)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var rawgIds = existing.Where(g => g.RawgId != null).Select(g => g.RawgId!.Value).ToHashSet();
+
+        var refs = new ReferenceCache(
+            (await db.Platforms.Select(p => p.Id).ToListAsync(ct)).ToHashSet(),
+            await db.Genres.ToDictionaryAsync(g => g.Id, ct));
+
+        var now = time.GetUtcNow().UtcDateTime;
+        var skipped = new List<ImportIssue>();
+        var errors = new List<ImportIssue>(parseErrors);
+        var games = new List<LibraryGame>();
+
+        foreach (var candidate in candidates)
+        {
+            var input = candidate.Input;
+            var validated = await ValidateAsync(input, ct, refs);
+            if (validated.Errors is not null)
+            {
+                errors.Add(new ImportIssue(candidate.Position, input.Title, string.Join(" ", validated.Errors.Values.Distinct())));
+                continue;
+            }
+
+            var key = TitleKey(input.Title, input.PlatformId!.Value);
+            if ((input.RawgId is { } rawg && rawgIds.Contains(rawg)) || titleKeys.Contains(key))
+            {
+                skipped.Add(new ImportIssue(candidate.Position, input.Title, "Kütüphanende aynı ad ve platformla (ya da aynı RAWG kaydıyla) zaten var."));
+                continue;
+            }
+
+            titleKeys.Add(key);
+            if (input.RawgId is { } newRawg)
+            {
+                rawgIds.Add(newRawg);
+            }
+
+            // Dosyadaki eklenme zamanı korunur (kütüphane sırası bozulmasın); gelecekte ya da çok eskiyse yok sayılır.
+            var added = candidate.DateAddedUtc is { } d && d <= now && d >= new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc) ? d : now;
+            var game = new LibraryGame { Id = Guid.NewGuid(), UserId = userId, DateAdded = added, RawgId = input.RawgId };
+            Apply(game, input, validated, now);
+            games.Add(game);
+        }
+
+        errors.Sort((a, b) => a.Position.CompareTo(b.Position));
+        var total = candidates.Count + parseErrors.Count;
+
+        if (existing.Count + games.Count > options.Value.MaxGamesPerUser)
+        {
+            return OperationResult<ImportResult>.Invalid(string.Empty,
+                $"Bu dosyayla kütüphanendeki oyun sayısı {options.Value.MaxGamesPerUser} sınırını aşıyor. Hiçbir oyun eklenmedi.");
+        }
+
+        if (!dryRun && games.Count > 0)
+        {
+            db.LibraryGames.AddRange(games);
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+            {
+                // Aynı anda RAWG'dan eklenen bir oyunla çakışma: hiçbir şey yazılmadı (tek transaction).
+                return OperationResult<ImportResult>.Invalid(string.Empty,
+                    "İçe aktarma sırasında kütüphanen değişti. Hiçbir oyun eklenmedi; lütfen tekrar dene.");
+            }
+        }
+
+        return OperationResult<ImportResult>.Success(new ImportResult(dryRun, total, dryRun ? 0 : games.Count, skipped, errors));
+    }
+
+    private static string TitleKey(string title, int platformId) => $"{platformId}\u001f{title.Trim()}";
+
     private static bool IsUniqueViolation(DbUpdateException ex) =>
         ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2601 or 2627 };
 
@@ -328,7 +414,10 @@ public sealed class LibraryService(
 
     private sealed record ValidatedInput(Dictionary<string, string>? Errors, string? CoverUrl, List<Genre> Genres);
 
-    private async Task<ValidatedInput> ValidateAsync(GameInput input, CancellationToken ct)
+    /// <summary>Toplu doğrulamada (içe aktarma) her oyun için veritabanına gitmemek için platform ve tür listesi.</summary>
+    private sealed record ReferenceCache(HashSet<int> PlatformIds, Dictionary<int, Genre> Genres);
+
+    private async Task<ValidatedInput> ValidateAsync(GameInput input, CancellationToken ct, ReferenceCache? refs = null)
     {
         var errors = new Dictionary<string, string>();
 
@@ -352,7 +441,7 @@ public sealed class LibraryService(
             errors.TryAdd(input.CoverChoice == CoverChoices.Url ? nameof(GameInput.CoverUrl) : nameof(GameInput.CoverChoice), cover.Error!);
         }
 
-        if (input.PlatformId is { } platformId && !await db.Platforms.AnyAsync(p => p.Id == platformId, ct))
+        if (input.PlatformId is { } platformId && !(refs?.PlatformIds.Contains(platformId) ?? await db.Platforms.AnyAsync(p => p.Id == platformId, ct)))
         {
             errors.TryAdd(nameof(GameInput.PlatformId), "Geçersiz platform.");
         }
@@ -365,7 +454,9 @@ public sealed class LibraryService(
         }
         else if (genreIds.Count > 0)
         {
-            genres = await db.Genres.Where(g => genreIds.Contains(g.Id)).ToListAsync(ct);
+            genres = refs is not null
+                ? genreIds.Where(refs.Genres.ContainsKey).Select(id => refs.Genres[id]).ToList()
+                : await db.Genres.Where(g => genreIds.Contains(g.Id)).ToListAsync(ct);
             if (genres.Count != genreIds.Count)
             {
                 errors.TryAdd(nameof(GameInput.GenreIds), "Geçersiz tür seçimi.");

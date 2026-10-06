@@ -26,7 +26,7 @@ güvenli olduğu anlamına gelmez. Bağımsız bir güvenlik incelemesi yapılma
 ## Giriş noktaları
 
 - Herkese açık: `/`, `/Privacy`, `/Account/Login`, `/Account/Register`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Error`, `/health`, `/health/live`, statik dosyalar.
-- Kimlik doğrulama gerektiren: `/Library/**`, `/Stats`, `/Account/Settings`, `/Account/Export`, `/Account/Delete`, `/Account/Logout` (POST).
+- Kimlik doğrulama gerektiren: `/Library/**`, `/Stats`, `/Account/Settings`, `/Account/Export`, `/Account/Import`, `/Account/Delete`, `/Account/Logout` (POST).
 - Operasyon: migration paketi (`efbundle`), geliştirme komutu `seed-demo` (yalnızca Development).
 
 ## Kötüye kullanım senaryoları ve önlemler
@@ -40,6 +40,7 @@ güvenli olduğu anlamına gelmez. Bağımsız bir güvenlik incelemesi yapılma
 | E-posta içeriğinin sızması | Outbox gövdesi Data Protection ile şifreli; gönderim bitince alıcı ve gövde silinir; loglarda alıcı/token yok | `OutboxTests` |
 | Başka kullanıcının verisine erişim (IDOR) | Her sorgu oturumdaki userId ile filtrelenir; başkasına ait kayıt 404 döner; userId istemciden alınmaz | `IsolationTests` |
 | Mass assignment | Form yalnızca `GameInput` alanlarını kabul eder; varlığa açık alan eşlemesi | `IsolationTests.Client_supplied_owner_fields_are_ignored_on_create` |
+| Hazırlanmış içe aktarma dosyası | Dosyadaki kimlik, sahip ve hesap alanları okunmaz; her oyun formla aynı kurallarla doğrulanır (kapak izin listesi dahil); platform ve türler yalnızca mevcut kayıtlarla eşleşir; tek transaction | `ImportTests.Owner_and_id_fields_in_the_file_are_ignored`, `ImportTests.Invalid_records_are_reported_...` |
 | CSRF | Tüm POST'larda antiforgery doğrulaması; SameSite=Lax oturum çerezi; durum değiştiren GET yok | `AuthTests.Post_without_antiforgery_token_is_rejected` |
 | XSS | Razor varsayılan HTML kodlaması; HTML kabul edilmez; CSP satır içi betik/stile izin vermez | `LibraryTests.User_content_is_rendered_as_plain_text`, `SecurityHeadersTests` |
 | SQL enjeksiyonu | EF Core parametreli sorguları; ham SQL yalnızca parametreli interpolasyonla (`SqlQuery($"...")`) | `SearchTests` |
@@ -47,7 +48,7 @@ güvenli olduğu anlamına gelmez. Bağımsız bir güvenlik incelemesi yapılma
 | Sıfırlama bağlantısı zehirleme (Host başlığı) | Bağlantı `App:PublicBaseUrl` ile kurulur | `PasswordResetTests.Reset_link_uses_configured_public_base_url...` |
 | Çalınmış oturum çerezi | Sunucu tarafı oturum; çıkış/parola değişikliği/sıfırlama/hesap silmede kayıt silinir | `AuthTests.Logout_...`, `AccountTests` |
 | SSRF | Sunucu hiçbir kullanıcı URL'sini indirmez; kapak adresleri izin listesiyle sınırlı | `UnitTests.External_urls_*`, `LibraryTests.External_cover_urls_outside_the_allow_list_are_rejected` |
-| Büyük istek / kaynak tüketimi | 128 KB istek gövdesi, form değer sınırları, sayfa boyutu 12/24/48, kullanıcı başına 5000 oyun, dışa aktarma oran sınırı | `SecurityHeadersTests.Oversized_request_body_is_rejected`, `SearchTests` |
+| Büyük istek / kaynak tüketimi | 128 KB istek gövdesi (yalnızca içe aktarma sayfasında 4 MB), form değer sınırları, sayfa boyutu 12/24/48, kullanıcı başına 5000 oyun, dışa ve içe aktarma oran sınırı, JSON derinlik sınırı | `SecurityHeadersTests.Oversized_request_body_is_rejected`, `SearchTests`, `ImportTests`, E2E büyük dosya testi |
 | Paylaşılan önbellekten veri sızması | Dinamik yanıtlar `Cache-Control: no-store` | `SecurityHeadersTests` |
 | Clickjacking | `frame-ancestors 'none'` ve `X-Frame-Options: DENY` | `SecurityHeadersTests` |
 | Hata ayrıntısı sızması | Üretimde genel hata sayfası; sağlık kontrolü yalnızca durum döndürür | `SecurityHeadersTests` |

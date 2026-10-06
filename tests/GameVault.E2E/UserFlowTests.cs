@@ -268,7 +268,7 @@ public sealed class UserFlowTests(E2EFixture fixture) : IClassFixture<E2EFixture
         await page.GetByRole(AriaRole.Link, new() { Name = "Sil…" }).ClickAsync();
         await Audit("silme onayı");
 
-        foreach (var url in new[] { "/Library", "/Stats", "/Suggest", "/Suggest?maxHours=1", "/Library/Search", "/Account/Settings", "/Account/Delete", "/Account/Export" })
+        foreach (var url in new[] { "/Library", "/Stats", "/Suggest", "/Suggest?maxHours=1", "/Library/Search", "/Account/Settings", "/Account/Delete", "/Account/Export", "/Account/Import" })
         {
             await page.GotoAsync(fixture.BaseUrl + url);
             await Audit(url);
@@ -308,5 +308,50 @@ public sealed class UserFlowTests(E2EFixture fixture) : IClassFixture<E2EFixture
         await Assertions.Expect(page.Locator(".cover-detail")).ToHaveClassAsync(new System.Text.RegularExpressions.Regex("is-broken"));
         await Assertions.Expect(page.Locator(".cover-detail .cover-fallback")).ToContainTextAsync("KK");
         await Screenshot(page, "13-broken-cover");
+    }
+
+    /// <summary>
+    /// Gerçek Kestrel'de: uygulamanın genel 128 KB gövde sınırından büyük bir dosya, yalnızca içe aktarma sayfasında
+    /// yükseltilen sınır sayesinde kabul edilir. (TestServer bu sınırı uygulamadığı için bu kontrol burada yapılır.)
+    /// </summary>
+    [Fact]
+    public async Task User_can_check_and_import_a_file_larger_than_the_default_body_limit()
+    {
+        var (context, page, cspErrors) = await NewPageAsync();
+        await using var __ = context;
+
+        await RegisterAsync(page, $"import-{Guid.NewGuid():N}@example.test");
+
+        var games = new System.Text.Json.Nodes.JsonArray();
+        for (var i = 1; i <= 80; i++)
+        {
+            games.Add(new System.Text.Json.Nodes.JsonObject
+            {
+                ["title"] = $"Büyük Dosya Oyunu {i}",
+                ["platform"] = "PC",
+                ["status"] = "not-started",
+                ["description"] = new string('a', 3900),
+                ["notes"] = new string('n', 3900)
+            });
+        }
+
+        var json = new System.Text.Json.Nodes.JsonObject { ["format"] = "gamevault-export/v1", ["games"] = games }.ToJsonString();
+        var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+        Assert.True(bytes.Length > 512 * 1024, "Dosya genel sınırdan belirgin biçimde büyük olmalı.");
+        var file = new FilePayload { Name = "gamevault-export.json", MimeType = "application/json", Buffer = bytes };
+
+        await page.GotoAsync(fixture.BaseUrl + "/Account/Import");
+        await page.GetByLabel("JSON dosyası").SetInputFilesAsync(file);
+        await page.GetByRole(AriaRole.Button, new() { Name = "Kontrol et" }).ClickAsync();
+        await Assertions.Expect(page.Locator("#import-result")).ToContainTextAsync("80 tanesi eklenebilir");
+
+        await page.GetByLabel("JSON dosyası").SetInputFilesAsync(file);
+        await page.GetByRole(AriaRole.Button, new() { Name = "İçe aktar" }).ClickAsync();
+        await Assertions.Expect(page.Locator("#import-result")).ToContainTextAsync("80 oyun kütüphanene eklendi");
+        await Screenshot(page, "14-import");
+
+        await page.GotoAsync(fixture.BaseUrl + "/Library?q=B%C3%BCy%C3%BCk%20Dosya");
+        await Assertions.Expect(page.GetByText("80 oyun")).ToBeVisibleAsync();
+        Assert.Empty(cspErrors);
     }
 }

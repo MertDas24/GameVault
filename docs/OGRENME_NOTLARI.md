@@ -435,6 +435,39 @@ dağılımı** (1–10). Platform, tür ve "en çok oynananlar" listeleri de çu
 > Grafik JavaScript olmadan çalışıyor ve test edilebiliyor. İhtiyaç büyürse (etkileşimli filtre, zoom) bir kütüphane
 > eklemeyi o zaman değerlendiririm.
 
+### Aşama 9: JSON'dan içe aktarma
+Hesap ayarlarındaki "İçe aktar", uygulamanın kendi dışa aktarma dosyasını (`gamevault-export/v1`) okuyup oyunları
+kütüphaneye ekler. Böylece veri taşınabilirliği iki yönlü olur: indirdiğin dosyayı başka bir hesaba ya da sıfırdan
+kurulmuş bir veritabanına geri yükleyebilirsin.
+
+- **Dosya bir kullanıcı girdisidir, güvenilmez.** [ImportService.cs](../GameVault.Business/Account/ImportService.cs)
+  dosyadaki `id`, `userId` ve hesap bilgilerini hiç okumaz. Oyunlar her zaman oturumdaki kullanıcıya, yeni kimlikle
+  eklenir. Bu, formdaki "mass assignment" korumasının dosya versiyonu.
+- **Aynı kurallar, tek yer:** Her oyun, formla eklenen oyunlarla aynı `ValidateAsync` metodundan geçer: puan 1–10,
+  kapak adresi izin listesinde, tarihler makul vb. Doğrulamayı ikinci kez yazmak, iki kuralın zamanla ayrışması demekti.
+- **Toplu işte N+1 sorgu tuzağı:** `ValidateAsync` normalde her oyun için platform ve türleri veritabanından kontrol eder.
+  5000 oyunluk bir dosyada bu 10.000 sorgu olurdu. İçe aktarmada platform ve tür listesi bir kez yüklenip
+  (`ReferenceCache`) tüm oyunlar için bellekten kontrol ediliyor.
+- **İdempotent (tekrarlanabilir) tasarım:** Kütüphanede aynı ad + platformla ya da aynı RAWG kimliğiyle zaten olan
+  oyunlar atlanır. Aynı dosyayı iki kez yüklemek kopya oluşturmaz. Kullanıcı yarıda kesilen bir işlemi gönül rahatlığıyla
+  tekrarlayabilir.
+- **Kısmi başarı + tek transaction:** Hatalı kayıtlar satır numarasıyla raporlanır ve atlanır. Geçerli olanlar tek bir
+  `SaveChanges` ile eklenir; ya hepsi yazılır ya hiçbiri. Kütüphane sınırı (5000) aşılacaksa hiçbir şey yazılmaz.
+- **"Kontrol et" (dry run):** Aynı kod yolunu çalıştırır ama veritabanına yazmaz. Kullanıcı önce sonucu görür.
+- **İstek boyutu sınırı sayfa bazında:** Uygulamanın genel istek sınırı 128 KB. Yalnızca bu sayfada
+  `[RequestSizeLimit]` ile 4 MB'a çıkarıldı; diğer sayfalar etkilenmedi. Dikkat: entegrasyon testlerinin kullandığı
+  TestServer bu sınırı uygulamaz. Sınırın gerçekten çalıştığını, gerçek Kestrel'de 640 KB'lık dosya yükleyen E2E
+  testi kanıtlıyor.
+- **JSON güvenliği:** `MaxDepth = 16` (derin iç içe dosyalarla yığın tüketimini önler), yorum ve sondaki virgül kabul
+  edilmez. Bir oyunda tür hatası varsa (ör. `"playtimeHours": "çok"`) yalnızca o oyun hatalı sayılır: oyunlar önce
+  `JsonElement` olarak okunup tek tek çözülür.
+
+> **Mülakat sorusu:** "Kullanıcının yüklediği dosyayı işlerken nelere dikkat edersin?"
+> **Cevap:** Boyut (istek ve dosya sınırı), biçim (beklenen format alanı), yapı (JSON derinliği), içerik (her alan
+> normal formla aynı doğrulamadan geçer), sahiplik (dosyadaki kimlikler yok sayılır), oran sınırı ve atomiklik
+> (tek transaction). Dosyayı diske yazmıyorum, akıştan okuyorum; böylece geçici dosya temizliği ya da yol (path)
+> saldırısı gibi sorunlar da oluşmuyor.
+
 ---
 
 ## Kendi notlarım

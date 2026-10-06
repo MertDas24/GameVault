@@ -21,7 +21,7 @@
 
 GameVault is a server-rendered ASP.NET Core web app where every user keeps a private game library. Users can add
 games with covers, platforms and genres, track status, playtime and ratings, filter and search their collection,
-see statistics, and export or delete all of their data. The UI is in Turkish and uses a dark theme.
+see statistics, and export, re-import or delete all of their data. The UI is in Turkish and uses a dark theme.
 
 > This is a **portfolio project**. It runs locally and in CI, but it is not deployed anywhere and it does not
 > collect real user data.
@@ -85,7 +85,7 @@ What I focused on, beyond the CRUD:
 | RAWG search | Search [RAWG](https://rawg.io) by title, see cover, release date, platforms and genres, then pick a result to prefill the add form. Each user can add a RAWG game only once. |
 | What should I play? | Random pick from the backlog (not started, on hold and optionally wishlist), filtered by platform, genre and max estimated hours. "Pick another" skips the last pick, and "Start playing" marks the game as playing. |
 | Statistics | Total games and hours, average rating, completion rate, status breakdown, started vs. finished games per month (last 12 months), rating distribution, top platforms and genres, most played. Charts are server-rendered SVG (no chart library, no inline styles), each with a table view. |
-| Account | Registration with email confirmation, password reset, display name, password change, sign out other sessions, JSON export, account deletion |
+| Account | Registration with email confirmation, password reset, display name, password change, sign out other sessions, JSON export and import (check-first mode, duplicates skipped), account deletion |
 | UX | Responsive layout with a sidebar on desktop and a bottom nav on mobile, keyboard accessible, `aria-invalid` form errors, reduced motion support |
 
 Statuses: Not started · Playing · Completed · On hold · Dropped · Wishlist.
@@ -178,7 +178,7 @@ antiforgery token.
 | `/Library/Search?q=` · `/Library/New?rawgId=` | user | Search RAWG, then prefill the add form from a result |
 | `/Suggest?platform=&genre=&maxHours=&wishlist=` | user | "What should I play?" suggestion. A POST with `handler=Start` marks the game as playing. |
 | `/Stats` | user | Statistics from the user's own data |
-| `/Account/Settings`, `/Account/Export`, `/Account/Delete` | user | Profile, password, sessions, JSON export, account deletion |
+| `/Account/Settings`, `/Account/Export`, `/Account/Import`, `/Account/Delete` | user | Profile, password, sessions, JSON export and import, account deletion |
 | `/health` · `/health/live` | anonymous | Readiness check (database) and liveness check. They return only `Healthy` or `Unhealthy`. |
 
 A request for another user's game returns **404**, not 403, so the app doesn't reveal that the game exists.

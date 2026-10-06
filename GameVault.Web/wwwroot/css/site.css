@@ -190,6 +190,12 @@ main:focus { outline: none; }
 .alert-warning ul { margin: 0 0 .75rem; }
 .alert ul { margin: 0; padding-left: 1.1rem; }
 .alert.validation-summary-valid { display: none; }
+.alert-info { background: var(--accent-soft); border-color: #4a3f9a; color: var(--text); }
+.alert p { margin: 0 0 .4rem; }
+.alert p:last-child { margin-bottom: 0; }
+.issue-list { margin: 0 0 1.25rem; padding-left: 1.1rem; display: grid; gap: .35rem; font-size: .92rem; }
+.issue-details { margin-bottom: 1.25rem; }
+.issue-details summary { cursor: pointer; color: var(--accent-2); width: fit-content; margin-bottom: .5rem; }
 
 .panel {
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
@@ -257,6 +263,7 @@ input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; accent-
 .field-error { color: var(--danger-text); font-size: .88rem; }
 .field-error:empty, .field-validation-valid { display: none; }
 
+.button-row { display: flex; flex-wrap: wrap; gap: .5rem; }
 .form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .75rem; margin-top: .5rem; }
 
 .form-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 2rem; align-items: start; }

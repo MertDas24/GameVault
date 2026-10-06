@@ -53,6 +53,7 @@ public class GameVaultFactory : WebApplicationFactory<Program>, IAsyncLifetime
         ["RateLimiting:ConfirmationPerAccount:PermitLimit"] = "10000",
         ["RateLimiting:SensitivePerUser:PermitLimit"] = "10000",
         ["RateLimiting:ExportPerUser:PermitLimit"] = "10000",
+        ["RateLimiting:ImportPerUser:PermitLimit"] = "10000",
         ["EmailOutbox:PollSeconds"] = "1",
         ["EmailOutbox:BaseDelaySeconds"] = "1",
         ["EmailOutbox:MaxDelaySeconds"] = "2"

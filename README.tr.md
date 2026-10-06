@@ -21,7 +21,7 @@
 
 GameVault, her kullanıcının yalnızca kendisinin görebildiği bir oyun kütüphanesi tuttuğu, sunucu tarafında render
 edilen bir ASP.NET Core web uygulamasıdır. Kullanıcı kapak, platform ve türleriyle oyun ekler; durum, süre ve puan
-takibi yapar; koleksiyonunu arar ve filtreler, istatistiklerini görür, verisinin tamamını dışa aktarabilir ya da
+takibi yapar; koleksiyonunu arar ve filtreler, istatistiklerini görür, verisinin tamamını dışa aktarabilir, yeniden içe aktarabilir ya da
 silebilir. Arayüz Türkçe ve koyu temalıdır.
 
 > Bu bir **portfolyo projesidir**. Yerelde ve CI'da çalışır; hiçbir ortama dağıtılmamıştır ve gerçek kullanıcı
@@ -87,7 +87,7 @@ $env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/Game
 | RAWG araması | [RAWG](https://rawg.io)'da isimle arama; kapak, çıkış tarihi, platform ve türleri görüp bir sonucu seçerek ekleme formunu doldurma. Her kullanıcı bir RAWG oyununu yalnızca bir kez ekleyebilir. |
 | Ne oynasam? | Sıradaki oyunlardan (başlanmamış, ara verilmiş, isteğe bağlı olarak istek listesi) platform, tür ve en fazla tahmini süreye göre rastgele öneri. “Başka öner” son öneriyi atlar, “Oynamaya başla” oyunu “Oynuyorum” olarak işaretler. |
 | İstatistikler | Toplam oyun ve süre, ortalama puan, tamamlama oranı, durum dağılımı, son 12 ayda aylık başlanan ve bitirilen oyunlar, puan dağılımı, en çok kullanılan platform ve türler, en çok oynananlar. Grafikler sunucuda SVG olarak çizilir (grafik kütüphanesi ve satır içi stil yok); her birinin tablo görünümü vardır. |
-| Hesap | E-posta doğrulamalı kayıt, parola sıfırlama, görünen ad, parola değiştirme, diğer oturumları kapatma, JSON dışa aktarma, hesap silme |
+| Hesap | E-posta doğrulamalı kayıt, parola sıfırlama, görünen ad, parola değiştirme, diğer oturumları kapatma, JSON dışa ve içe aktarma (önce kontrol modu, kopyalar atlanır), hesap silme |
 | Arayüz | Masaüstünde yan menü, mobilde alt gezinme çubuğu; klavyeyle kullanım; `aria-invalid` ile form hataları; azaltılmış hareket desteği |
 
 Durumlar: Başlamadım · Oynuyorum · Bitirdim · Ara verdim · Bıraktım · İstek listesi.
@@ -180,7 +180,7 @@ tokenı ile korunan bir HTML form gönderimidir.
 | `/Library/Search?q=` · `/Library/New?rawgId=` | kullanıcı | RAWG'da arama ve seçilen sonuçla ekleme formunu doldurma |
 | `/Suggest?platform=&genre=&maxHours=&wishlist=` | kullanıcı | “Ne oynasam?” önerisi. `handler=Start` ile yapılan POST, oyunu “Oynuyorum” olarak işaretler. |
 | `/Stats` | kullanıcı | Kullanıcının kendi verisinden istatistikler |
-| `/Account/Settings`, `/Account/Export`, `/Account/Delete` | kullanıcı | Profil, parola, oturumlar, JSON dışa aktarma, hesap silme |
+| `/Account/Settings`, `/Account/Export`, `/Account/Import`, `/Account/Delete` | kullanıcı | Profil, parola, oturumlar, JSON dışa ve içe aktarma, hesap silme |
 | `/health` · `/health/live` | herkese açık | Hazırlık (veritabanı) ve canlılık kontrolü. Yalnızca `Healthy` ya da `Unhealthy` döner. |
 
 Başka bir kullanıcının oyununa yapılan istek 403 değil **404** döner; böylece oyunun var olduğu da belli olmaz.

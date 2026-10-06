@@ -42,6 +42,23 @@ public sealed partial class AppClient(HttpClient http, CapturingEmailSender emai
         return await http.PostAsync(postUrl, new FormUrlEncodedContent(all));
     }
 
+    /// <summary>Dosya yükleme formu (multipart/form-data) gönderir; token aynı sayfadan alınır.</summary>
+    public async Task<HttpResponseMessage> PostFileAsync(string url, string fileField, byte[] content, string fileName, params (string Key, string Value)[] fields)
+    {
+        var token = await GetTokenAsync(url);
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(token), "__RequestVerificationToken");
+        foreach (var (key, value) in fields)
+        {
+            form.Add(new StringContent(value), key);
+        }
+
+        var file = new ByteArrayContent(content);
+        file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        form.Add(file, fileField, fileName);
+        return await http.PostAsync(url, form);
+    }
+
     public async Task<IDocument> ParseAsync(HttpResponseMessage response) =>
         Parser.ParseDocument(await response.Content.ReadAsStringAsync());
 

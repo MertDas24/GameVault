@@ -1,0 +1,83 @@
+@page
+@model GameVault.Web.Pages.Account.ImportModel
+@{
+    ViewData["Title"] = "Verilerimi içe aktar";
+    ViewData["Section"] = "account";
+    var r = Model.Result;
+}
+<a class="back-link" href="/Account/Settings"><partial name="_Icon" model="@("back")" /> Hesap ayarları</a>
+<section class="panel narrow" aria-labelledby="import-heading">
+    <h1 id="import-heading">Verilerimi içe aktar</h1>
+    <p>Game Vault'tan indirdiğin JSON dosyasındaki oyunları kütüphanene ekler. Başka bir hesaptan aldığın dosyayı da kullanabilirsin.</p>
+    <ul class="plain-list">
+        <li>Mevcut oyunların silinmez ya da değiştirilmez; yalnızca yeni oyunlar eklenir.</li>
+        <li>Kütüphanende aynı ad ve platformla zaten olan oyunlar atlanır. Aynı dosyayı iki kez yüklemek kopya oluşturmaz.</li>
+        <li>Dosyadaki e-posta ve hesap bilgileri okunmaz.</li>
+    </ul>
+    <p class="muted">Önce “Kontrol et” ile neyin ekleneceğini görebilirsin; bu adım hiçbir şeyi kaydetmez.</p>
+
+    @if (Model.Error is not null)
+    {
+        <div class="alert alert-error" role="alert">@Model.Error</div>
+    }
+
+    @if (r is not null)
+    {
+        <div class="alert @(r.DryRun ? "alert-info" : "alert-success")" role="status" id="import-result">
+            @if (r.DryRun)
+            {
+                <p><strong>Kontrol tamamlandı, henüz hiçbir şey eklenmedi.</strong></p>
+                <p>Dosyadaki @r.Total oyundan <strong>@r.Importable</strong> tanesi eklenebilir, @r.Skipped.Count tanesi zaten var, @r.Errors.Count tanesi hatalı.</p>
+            }
+            else
+            {
+                <p><strong>@r.Imported oyun kütüphanene eklendi.</strong></p>
+                <p>@r.Skipped.Count oyun zaten vardı, @r.Errors.Count oyun hatalı olduğu için eklenmedi.</p>
+                @if (r.Imported > 0)
+                {
+                    <p><a href="/Library">Kütüphaneye git</a></p>
+                }
+            }
+        </div>
+
+        @if (r.Errors.Count > 0)
+        {
+            <h2>Hatalı kayıtlar</h2>
+            <ul class="issue-list" id="import-errors">
+                @foreach (var issue in r.Errors.Take(ImportModel.MaxListedIssues))
+                {
+                    <li><span class="muted">#@issue.Position</span> <strong class="break-anywhere">@issue.Title</strong>: @issue.Message</li>
+                }
+            </ul>
+            @if (r.Errors.Count > ImportModel.MaxListedIssues)
+            {
+                <p class="muted">… ve @(r.Errors.Count - ImportModel.MaxListedIssues) hata daha.</p>
+            }
+        }
+
+        @if (r.Skipped.Count > 0)
+        {
+            <details class="issue-details">
+                <summary>Atlanan oyunlar (@r.Skipped.Count)</summary>
+                <ul class="issue-list" id="import-skipped">
+                    @foreach (var issue in r.Skipped.Take(ImportModel.MaxListedIssues))
+                    {
+                        <li><span class="muted">#@issue.Position</span> <span class="break-anywhere">@issue.Title</span></li>
+                    }
+                </ul>
+            </details>
+        }
+    }
+
+    <form method="post" enctype="multipart/form-data" class="form" data-busy-form>
+        <div class="field">
+            <label for="file">JSON dosyası</label>
+            <input type="file" id="file" name="file" accept=".json,application/json" required aria-describedby="file-hint">
+            <p class="hint" id="file-hint">En fazla 4 MB. Biçim: Game Vault dışa aktarma dosyası (gamevault-export/v1).</p>
+        </div>
+        <div class="form-actions">
+            <button type="submit" name="mode" value="check" class="btn btn-secondary" data-busy-text="Kontrol ediliyor…">Kontrol et</button>
+            <button type="submit" name="mode" value="import" class="btn btn-primary" data-busy-text="İçe aktarılıyor…"><partial name="_Icon" model="@("upload")" /> İçe aktar</button>
+        </div>
+    </form>
+</section>

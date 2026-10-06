@@ -205,6 +205,7 @@ public static class ServiceRegistration
         services.AddScoped<StatsService>();
         services.AddScoped<SuggestionService>();
         services.AddScoped<AccountService>();
+        services.AddScoped<ImportService>();
         services.AddScoped<DbRateLimiter>();
         services.AddScoped<DemoDataSeeder>();
         services.AddSingleton<OutboxSignal>();
