@@ -3,13 +3,15 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Sürümler 2026-09-28 tarihinde api.nuget.org üzerinden doğrulandı. -->
+    <!-- Sürümler 2026-09-28 tarihinde api.nuget.org üzerinden doğrulandı (QRCoder: 2026-10-06). -->
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
     <PackageVersion Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.12" />
     <PackageVersion Include="MailKit" Version="4.18.1" />
+    <!-- 2FA kurulumunda QR kodu (MIT). Yalnızca modül matrisi kullanılır; SVG uygulama tarafından çizilir. -->
+    <PackageVersion Include="QRCoder" Version="1.8.0" />
     <!-- Testler -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />

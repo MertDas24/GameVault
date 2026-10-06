@@ -1,0 +1,29 @@
+@page
+@model GameVault.Web.Pages.Account.LoginWith2faModel
+@{
+    ViewData["Title"] = "İki adımlı doğrulama";
+}
+<section class="auth-card" aria-labelledby="twofa-heading">
+    <h1 id="twofa-heading">İki adımlı doğrulama</h1>
+    <p class="muted">Doğrulayıcı uygulamanda (Google Authenticator, Microsoft Authenticator, 1Password vb.) Game Vault için görünen 6 haneli kodu gir.</p>
+
+    @if (Model.Error is not null)
+    {
+        <div class="alert alert-error" role="alert">@Model.Error</div>
+    }
+
+    <form method="post" class="form" data-busy-form novalidate>
+        <input type="hidden" asp-for="ReturnUrl">
+        <input type="hidden" asp-for="Input.RememberMe">
+        <div class="field">
+            <label asp-for="Input.Code">Doğrulama kodu</label>
+            <input asp-for="Input.Code" class="code-input" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required maxlength="16" autofocus>
+            <span asp-validation-for="Input.Code" id="Input_Code-error" class="field-error"></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" data-busy-text="Doğrulanıyor…">Doğrula ve giriş yap</button>
+    </form>
+
+    <p class="auth-links">
+        <a href="/Account/LoginWithRecoveryCode?returnUrl=@Uri.EscapeDataString(Model.ReturnUrl ?? "/Library")">Uygulamama erişemiyorum: kurtarma kodu kullan</a>
+    </p>
+</section>

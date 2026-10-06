@@ -569,3 +569,19 @@ progress::-moz-progress-bar { background: linear-gradient(90deg, var(--accent), 
     background: var(--accent-soft); border: 1px solid var(--border-strong); color: var(--text); text-decoration: none;
 }
 .tag:hover { border-color: var(--accent-2); color: #fff; }
+
+/* ---------- İki adımlı doğrulama ---------- */
+.status-on { color: var(--success-text); }
+.status-off { color: var(--warning-text); }
+.status-line { margin-bottom: 1rem; }
+.setup-steps { display: grid; gap: 1rem; padding-left: 1.25rem; margin: 0 0 1.25rem; }
+.qr-box { margin: .75rem 0; width: fit-content; padding: 0; border-radius: var(--radius-sm); overflow: hidden; line-height: 0; }
+.qr { display: block; width: 200px; height: 200px; }
+.shared-key, .recovery-codes code {
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 1rem; letter-spacing: .04em;
+    background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 6px; padding: .2rem .5rem; color: var(--text);
+    overflow-wrap: anywhere;
+}
+.recovery-codes { list-style: none; padding: 0; margin: .75rem 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .5rem; }
+.code-input { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 1.15rem; letter-spacing: .15em; }
+.secondary-action { margin-top: 1rem; }

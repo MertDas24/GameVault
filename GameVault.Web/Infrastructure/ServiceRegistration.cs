@@ -93,6 +93,7 @@ public static class ServiceRegistration
                 o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             })
             .AddEntityFrameworkStores<GameVaultDbContext>()
+            .AddSignInManager<AppSignInManager>()
             .AddDefaultTokenProviders()
             .AddTokenProvider<EmailConfirmationTokenProvider>(EmailConfirmationTokenProvider.ProviderName)
             .AddClaimsPrincipalFactory<AppClaimsPrincipalFactory>()
@@ -126,6 +127,19 @@ public static class ServiceRegistration
         });
         services.AddOptions<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme)
             .Configure<DbTicketStore>((o, store) => o.SessionStore = store);
+
+        // Parola doğrulandıktan sonra ikinci adım beklenirken kullanılan kısa ömürlü ara çerez. Yalnızca kullanıcı
+        // kimliğini (Data Protection ile şifreli) taşır; oturum açtırmaz. "Bu cihazı hatırla" seçeneği yoktur.
+        services.Configure<CookieAuthenticationOptions>(IdentityConstants.TwoFactorUserIdScheme, o =>
+        {
+            o.Cookie.Name = isProduction ? "__Host-gv_2fa" : "gv_2fa";
+            o.Cookie.HttpOnly = true;
+            o.Cookie.SameSite = SameSiteMode.Lax;
+            o.Cookie.SecurePolicy = isProduction ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+            o.Cookie.Path = "/";
+            o.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+            o.SlidingExpiration = false;
+        });
 
         // Varsayılan olarak her sayfa kimlik doğrulama ister; herkese açık sayfalar [AllowAnonymous] ile işaretlenir.
         services.AddAuthorizationBuilder()
@@ -199,6 +213,7 @@ public static class ServiceRegistration
         services.AddSingleton<CoverPolicy>();
         services.AddSingleton<Display>();
         services.AddScoped<LoginTiming>();
+        services.AddScoped<TotpReplayGuard>();
         services.AddScoped<AccountEmails>();
         services.AddScoped<LibraryService>();
         services.AddScoped<ReferenceDataService>();

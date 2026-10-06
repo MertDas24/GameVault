@@ -15,7 +15,7 @@ namespace GameVault.Web.Pages.Account;
 /// </summary>
 [AllowAnonymous]
 public sealed class LoginModel(
-    SignInManager<ApplicationUser> signIn,
+    AppSignInManager signIn,
     UserManager<ApplicationUser> users,
     DbRateLimiter limiter,
     LoginTiming timing) : AppPageModel
@@ -82,8 +82,21 @@ public sealed class LoginModel(
             return Page();
         }
 
-        await users.ResetAccessFailedCountAsync(user);
-        await signIn.SignInAsync(user, Input.RememberMe);
+        // İki adımlı doğrulama açıksa hatalı deneme sayacı burada sıfırlanmaz: parolayı bilen biri, her seferinde
+        // parolayı yeniden girerek ikinci adımdaki kod denemelerinin kilidini sıfırlayamasın.
+        var twoFactor = await users.GetTwoFactorEnabledAsync(user);
+        if (!twoFactor)
+        {
+            await users.ResetAccessFailedCountAsync(user);
+        }
+
+        var result = await signIn.SignInOrRequireTwoFactorAsync(user, Input.RememberMe);
+        if (result.RequiresTwoFactor)
+        {
+            var returnUrl = SafeLocalUrl(ReturnUrl, "/Library");
+            return LocalRedirect($"/Account/LoginWith2fa?returnUrl={Uri.EscapeDataString(returnUrl)}&rememberMe={Input.RememberMe}");
+        }
+
         return LocalRedirect(SafeLocalUrl(ReturnUrl, "/Library"));
     }
 }

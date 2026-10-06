@@ -64,6 +64,9 @@ $env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/Game
 - **Varsayılan olarak güvenli.** Açıkça muaf tutulmayan her sayfa giriş ister. Uygulama katı bir Content Security
   Policy gönderir, her formda antiforgery doğrulaması çalışır ve giriş yanıtları hesabın var olup olmadığını belli
   etmez.
+- **İsteğe bağlı iki adımlı doğrulama.** Satır içi SVG olarak çizilen QR koduyla TOTP, tek kullanımlık on kurtarma kodu
+  ve tekrar kullanım koruması (aynı kod iki kez kullanılamaz). Açmak, kapatmak ve kodları yenilemek parola ister;
+  açınca diğer oturumlar kapatılır. Testler kodları bağımsız bir RFC 6238 uygulamasıyla üretir.
 - **Birden fazla instance'ta çalışan oran sınırlama.** Tüm instance'lar tek bir atomik SQL `MERGE` sayacını
   paylaşır, Redis gerekmez.
 - **Güvenilir e-posta.** Doğrulama ve parola sıfırlama e-postaları veritabanındaki bir kuyruktan (outbox)
@@ -88,7 +91,7 @@ $env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/Game
 | RAWG araması | [RAWG](https://rawg.io)'da isimle arama; kapak, çıkış tarihi, platform ve türleri görüp bir sonucu seçerek ekleme formunu doldurma. Her kullanıcı bir RAWG oyununu yalnızca bir kez ekleyebilir. |
 | Ne oynasam? | Sıradaki oyunlardan (başlanmamış, ara verilmiş, isteğe bağlı olarak istek listesi) platform, tür ve en fazla tahmini süreye göre rastgele öneri. “Başka öner” son öneriyi atlar, “Oynamaya başla” oyunu “Oynuyorum” olarak işaretler. |
 | İstatistikler | Toplam oyun ve süre, ortalama puan, tamamlama oranı, durum dağılımı, son 12 ayda aylık başlanan ve bitirilen oyunlar, puan dağılımı, en çok kullanılan platform ve türler, en çok oynananlar. Grafikler sunucuda SVG olarak çizilir (grafik kütüphanesi ve satır içi stil yok); her birinin tablo görünümü vardır. |
-| Hesap | E-posta doğrulamalı kayıt, parola sıfırlama, görünen ad, parola değiştirme, diğer oturumları kapatma, JSON dışa ve içe aktarma (önce kontrol modu, kopyalar atlanır), hesap silme |
+| Hesap | E-posta doğrulamalı kayıt, parola sıfırlama, görünen ad, parola değiştirme, diğer oturumları kapatma, isteğe bağlı iki adımlı doğrulama (doğrulayıcı uygulama + kurtarma kodları), JSON dışa ve içe aktarma (önce kontrol modu, kopyalar atlanır), hesap silme |
 | Arayüz | Masaüstünde yan menü, mobilde alt gezinme çubuğu; klavyeyle kullanım; `aria-invalid` ile form hataları; azaltılmış hareket desteği |
 
 Durumlar: Başlamadım · Oynuyorum · Bitirdim · Ara verdim · Bıraktım · İstek listesi.
@@ -99,7 +102,7 @@ Durumlar: Başlamadım · Oynuyorum · Bitirdim · Ara verdim · Bıraktım · �
 |---|---|
 | Çalışma zamanı | .NET 10 (LTS), ASP.NET Core Razor Pages (sunucu tarafı render, JavaScript yalnızca iyileştirme için) |
 | Veri | SQL Server, Entity Framework Core 10, sürümlü migration'lar |
-| Kimlik doğrulama | ASP.NET Core Identity, sunucu tarafı oturum saklayan cookie kimlik doğrulaması |
+| Kimlik doğrulama | ASP.NET Core Identity, sunucu tarafı oturum saklayan cookie kimlik doğrulaması, isteğe bağlı TOTP iki adımlı doğrulama |
 | E-posta | MailKit (SMTP), yerelde Mailpit |
 | Harici API | `IHttpClientFactory` ile RAWG Video Games Database (isteğe bağlı) |
 | Testler | xUnit v3, WebApplicationFactory, AngleSharp, Playwright (Chromium), axe-core |
@@ -178,14 +181,14 @@ tokenı ile korunan bir HTML form gönderimidir.
 | Adres | Erişim | Amaç |
 |---|---|---|
 | `/` | herkese açık | Açılış sayfası |
-| `/Account/Register`, `/Account/Login`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Account/ConfirmEmail` | herkese açık | Kayıt ve giriş akışları |
+| `/Account/Register`, `/Account/Login`, `/Account/LoginWith2fa`, `/Account/LoginWithRecoveryCode`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Account/ConfirmEmail` | herkese açık | Kayıt ve giriş akışları (ikinci adım yalnızca doğru paroladan sonra çalışır) |
 | `/Library` | kullanıcı | Oyunları arama, filtreleme, sıralama ve sayfalama (`?q=&status=&platform=&genre=&collection=&fav=&sort=&size=&page=`) |
 | `/Library/New`, `/Library/{id}`, `/Library/{id}/Edit`, `/Library/{id}/Delete` | kullanıcı (yalnızca sahibi) | Oyun ekleme, görüntüleme, düzenleme ve silme |
 | `/Library/Search?q=` · `/Library/New?rawgId=` | kullanıcı | RAWG'da arama ve seçilen sonuçla ekleme formunu doldurma |
 | `/Suggest?platform=&genre=&maxHours=&wishlist=` | kullanıcı | “Ne oynasam?” önerisi. `handler=Start` ile yapılan POST, oyunu “Oynuyorum” olarak işaretler. |
 | `/Stats` | kullanıcı | Kullanıcının kendi verisinden istatistikler |
 | `/Collections` | kullanıcı (yalnızca sahibi) | Koleksiyonları listeleme, oluşturma, yeniden adlandırma ve silme |
-| `/Account/Settings`, `/Account/Export`, `/Account/Import`, `/Account/Delete` | kullanıcı | Profil, parola, oturumlar, JSON dışa ve içe aktarma, hesap silme |
+| `/Account/Settings`, `/Account/TwoFactor`, `/Account/Export`, `/Account/Import`, `/Account/Delete` | kullanıcı | Profil, parola, oturumlar, iki adımlı doğrulama, JSON dışa ve içe aktarma, hesap silme |
 | `/health` · `/health/live` | herkese açık | Hazırlık (veritabanı) ve canlılık kontrolü. Yalnızca `Healthy` ya da `Unhealthy` döner. |
 
 Başka bir kullanıcının oyununa yapılan istek 403 değil **404** döner; böylece oyunun var olduğu da belli olmaz.

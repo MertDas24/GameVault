@@ -63,6 +63,9 @@ What I focused on, beyond the CRUD:
 - **Secure by default.** Authorization is required on every page unless the page opts out. The app sends a strict
   Content Security Policy, antiforgery runs on every form and the login responses don't reveal whether an account
   exists.
+- **Optional two-factor authentication.** TOTP with a QR code drawn as inline SVG, ten single-use recovery codes and
+  replay protection, so a code cannot be used twice. Turning it on, off or regenerating codes asks for the password,
+  and turning it on signs out other sessions. Tests generate codes with an independent RFC 6238 implementation.
 - **Rate limiting that works across instances.** One atomic SQL `MERGE` counter is shared by all instances, with no
   Redis needed.
 - **Reliable email.** Confirmation and password-reset mails go through a database outbox and are retried with
@@ -86,7 +89,7 @@ What I focused on, beyond the CRUD:
 | RAWG search | Search [RAWG](https://rawg.io) by title, see cover, release date, platforms and genres, then pick a result to prefill the add form. Each user can add a RAWG game only once. |
 | What should I play? | Random pick from the backlog (not started, on hold and optionally wishlist), filtered by platform, genre and max estimated hours. "Pick another" skips the last pick, and "Start playing" marks the game as playing. |
 | Statistics | Total games and hours, average rating, completion rate, status breakdown, started vs. finished games per month (last 12 months), rating distribution, top platforms and genres, most played. Charts are server-rendered SVG (no chart library, no inline styles), each with a table view. |
-| Account | Registration with email confirmation, password reset, display name, password change, sign out other sessions, JSON export and import (check-first mode, duplicates skipped), account deletion |
+| Account | Registration with email confirmation, password reset, display name, password change, sign out other sessions, optional two-factor authentication (authenticator app + recovery codes), JSON export and import (check-first mode, duplicates skipped), account deletion |
 | UX | Responsive layout with a sidebar on desktop and a bottom nav on mobile, keyboard accessible, `aria-invalid` form errors, reduced motion support |
 
 Statuses: Not started · Playing · Completed · On hold · Dropped · Wishlist.
@@ -97,7 +100,7 @@ Statuses: Not started · Playing · Completed · On hold · Dropped · Wishlist.
 |---|---|
 | Runtime | .NET 10 (LTS), ASP.NET Core Razor Pages (server-side rendering, progressive JS) |
 | Data | SQL Server, Entity Framework Core 10, versioned migrations |
-| Auth | ASP.NET Core Identity with cookie authentication and server-side session storage |
+| Auth | ASP.NET Core Identity with cookie authentication, server-side session storage and optional TOTP two-factor authentication |
 | Email | MailKit (SMTP), Mailpit for local development |
 | External API | RAWG Video Games Database via `IHttpClientFactory` (optional) |
 | Tests | xUnit v3, WebApplicationFactory, AngleSharp, Playwright (Chromium), axe-core |
@@ -176,14 +179,14 @@ antiforgery token.
 | Route | Auth | Purpose |
 |---|---|---|
 | `/` | anonymous | Landing page |
-| `/Account/Register`, `/Account/Login`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Account/ConfirmEmail` | anonymous | Sign-up and sign-in flows |
+| `/Account/Register`, `/Account/Login`, `/Account/LoginWith2fa`, `/Account/LoginWithRecoveryCode`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Account/ConfirmEmail` | anonymous | Sign-up and sign-in flows (the second step only works after a correct password) |
 | `/Library` | user | Search, filter, sort and paginate the user's games (`?q=&status=&platform=&genre=&collection=&fav=&sort=&size=&page=`) |
 | `/Library/New`, `/Library/{id}`, `/Library/{id}/Edit`, `/Library/{id}/Delete` | user (owner only) | Create, view, edit and delete a game |
 | `/Library/Search?q=` · `/Library/New?rawgId=` | user | Search RAWG, then prefill the add form from a result |
 | `/Suggest?platform=&genre=&maxHours=&wishlist=` | user | "What should I play?" suggestion. A POST with `handler=Start` marks the game as playing. |
 | `/Stats` | user | Statistics from the user's own data |
 | `/Collections` | user (owner only) | List, create, rename and delete collections |
-| `/Account/Settings`, `/Account/Export`, `/Account/Import`, `/Account/Delete` | user | Profile, password, sessions, JSON export and import, account deletion |
+| `/Account/Settings`, `/Account/TwoFactor`, `/Account/Export`, `/Account/Import`, `/Account/Delete` | user | Profile, password, sessions, two-factor authentication, JSON export and import, account deletion |
 | `/health` · `/health/live` | anonymous | Readiness check (database) and liveness check. They return only `Healthy` or `Unhealthy`. |
 
 A request for another user's game returns **404**, not 403, so the app doesn't reveal that the game exists.

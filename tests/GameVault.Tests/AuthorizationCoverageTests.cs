@@ -29,6 +29,9 @@ public sealed partial class AuthorizationCoverageTests(GameVaultFactory factory)
         "Account/ResendConfirmation",
         "Account/ForgotPassword",
         "Account/ResetPassword",
+        // İkinci adım: parolayı doğrulanmış ama henüz oturum açmamış kullanıcı (ara çerez sayfanın içinde kontrol edilir).
+        "Account/LoginWith2fa",
+        "Account/LoginWithRecoveryCode",
         "health",
         "health/live"
     ];

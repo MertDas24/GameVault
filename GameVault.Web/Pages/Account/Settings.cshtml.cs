@@ -17,6 +17,7 @@ public sealed class SettingsModel(
     public string Email { get; private set; } = string.Empty;
     public DateTime CreatedAtUtc { get; private set; }
     public int ActiveSessions { get; private set; }
+    public bool TwoFactorEnabled { get; private set; }
 
     [BindProperty]
     public ProfileInput Profile { get; set; } = new();
@@ -125,6 +126,7 @@ public sealed class SettingsModel(
         Email = user.Email ?? string.Empty;
         CreatedAtUtc = user.CreatedAtUtc;
         ActiveSessions = await accounts.CountActiveSessionsAsync(user.Id, ct);
+        TwoFactorEnabled = await users.GetTwoFactorEnabledAsync(user);
     }
 
     private void ClearStateExcept(string prefix)

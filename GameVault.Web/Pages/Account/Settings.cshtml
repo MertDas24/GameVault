@@ -55,6 +55,22 @@
         </form>
     </section>
 
+    <section class="panel" aria-labelledby="twofa-heading">
+        <h2 id="twofa-heading">İki adımlı doğrulama</h2>
+        <p>
+            Durum: @if (Model.TwoFactorEnabled)
+            {
+                <strong class="status-on">Açık</strong>
+            }
+            else
+            {
+                <strong class="status-off">Kapalı</strong>
+            }
+        </p>
+        <p class="muted">Girişte parolanın yanında doğrulayıcı uygulamandaki kod da istenir.</p>
+        <p><a class="btn btn-secondary" href="/Account/TwoFactor"><partial name="_Icon" model="@("shield")" /> @(Model.TwoFactorEnabled ? "Yönet" : "Kur")</a></p>
+    </section>
+
     <section class="panel" aria-labelledby="sessions-heading">
         <h2 id="sessions-heading">Oturumlar</h2>
         <p>Etkin oturum sayısı: <strong>@Model.ActiveSessions</strong> (bu cihaz dahil).</p>

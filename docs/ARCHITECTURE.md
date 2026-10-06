@@ -39,6 +39,7 @@ Katmanlı proje yapısı mevcut kod tabanından korunmuştur.
 | 17 | **Grafikler sunucuda SVG olarak çizilir** (grafik kütüphanesi yok) | CSP satır içi stile ve dış betiğe izin vermez; çoğu grafik kütüphanesi satır içi stil yazar. İki basit sütun grafiği için Razor + SVG yeterli; her grafiğin tablo görünümü var. |
 | 18 | **İçe aktarma yalnızca uygulamanın kendi biçimini kabul eder** (`gamevault-export/v1`) | Dosyadaki kimlik ve sahip alanları okunmaz; her oyun formla aynı doğrulamadan geçer; aynı ad + platform atlanır (tekrar yüklemek güvenli); geçerli oyunlar tek transaction ile yazılır. İstek sınırı yalnızca bu sayfada 4 MB. |
 | 19 | **Koleksiyonlar kullanıcıya ait, oyunlarla N—N** | Türler ortak başvuru verisidir; koleksiyonlar kişiseldir. Kullanıcı → koleksiyon ilişkisi cascade değil (`Restrict`): kullanıcı → oyun → bağlantı yoluyla birlikte SQL Server "birden çok cascade yolu" hatası verirdi. Hesap silinirken koleksiyonlar aynı transaction içinde açıkça silinir. |
+| 20 | **İki adımlı doğrulama: Identity'nin TOTP sağlayıcısı, kendi giriş akışımızla** | Giriş sayfası parolayı kendisi doğruladığı için Identity'nin "giriş yap ya da ikinci adımı iste" mantığı küçük bir `SignInManager` alt sınıfıyla (`AppSignInManager`) açıldı; TOTP doğrulaması, kurtarma kodları ve kilit Identity'den gelir. Eklenenler: tekrar kullanım koruması, açma/kapatma için parola, açınca diğer oturumları kapatma, e-posta bildirimi. QR kodu QRCoder'ın modül matrisinden satır içi SVG olarak çizilir (CSP değişmedi). "Bu cihazı hatırla" bilinçli olarak yok. |
 
 ## İstek akışı
 

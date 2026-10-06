@@ -122,3 +122,45 @@ public sealed class DeleteAccountInput
     [Range(typeof(bool), "true", "true", ErrorMessage = "Devam etmek için bu kutuyu işaretle.")]
     public bool Acknowledge { get; set; }
 }
+
+public sealed class TwoFactorCodeInput
+{
+    [Display(Name = "Doğrulama kodu")]
+    [Required(ErrorMessage = "Doğrulayıcı uygulamandaki 6 haneli kodu gir.")]
+    [StringLength(16, ErrorMessage = "Kod çok uzun.")]
+    public string Code { get; set; } = string.Empty;
+
+    /// <summary>Girişte "Beni hatırla" seçimi ikinci adıma taşınır.</summary>
+    public bool RememberMe { get; set; }
+}
+
+public sealed class RecoveryCodeInput
+{
+    [Display(Name = "Kurtarma kodu")]
+    [Required(ErrorMessage = "Kurtarma kodlarından birini gir.")]
+    [StringLength(32, ErrorMessage = "Kod çok uzun.")]
+    public string Code { get; set; } = string.Empty;
+}
+
+public sealed class EnableTwoFactorInput
+{
+    [Display(Name = "Doğrulama kodu")]
+    [Required(ErrorMessage = "Uygulamada görünen 6 haneli kodu gir.")]
+    [StringLength(16, ErrorMessage = "Kod çok uzun.")]
+    public string Code { get; set; } = string.Empty;
+
+    [Display(Name = "Mevcut parola")]
+    [Required(ErrorMessage = "Parolanı gir.")]
+    [StringLength(256, ErrorMessage = "Parola çok uzun.")]
+    [DataType(DataType.Password)]
+    public string Password { get; set; } = string.Empty;
+}
+
+public sealed class PasswordConfirmInput
+{
+    [Display(Name = "Mevcut parola")]
+    [Required(ErrorMessage = "Parolanı gir.")]
+    [StringLength(256, ErrorMessage = "Parola çok uzun.")]
+    [DataType(DataType.Password)]
+    public string Password { get; set; } = string.Empty;
+}

@@ -1,0 +1,103 @@
+@page
+@model GameVault.Web.Pages.Account.TwoFactorModel
+@{
+    ViewData["Title"] = "İki adımlı doğrulama";
+    ViewData["Section"] = "account";
+}
+<a class="back-link" href="/Account/Settings"><partial name="_Icon" model="@("back")" /> Hesap ayarları</a>
+
+<section class="panel narrow" aria-labelledby="twofa-heading">
+    <h1 id="twofa-heading">İki adımlı doğrulama</h1>
+    <p>
+        Açıkken girişte parolanın yanında telefonundaki doğrulayıcı uygulamanın ürettiği 6 haneli kod da istenir.
+        Parolan ele geçirilse bile hesabına bu kod olmadan girilemez.
+    </p>
+    <p class="status-line" id="twofa-status">
+        Durum:
+        @if (Model.IsEnabled)
+        {
+            <strong class="status-on">Açık</strong>
+        }
+        else
+        {
+            <strong class="status-off">Kapalı</strong>
+        }
+    </p>
+
+    @if (Model.NewRecoveryCodes is { Count: > 0 } codes)
+    {
+        <div class="alert alert-warning" role="status" id="recovery-codes">
+            <p><strong>Kurtarma kodlarını şimdi kaydet.</strong> Bu kodlar bir daha gösterilmeyecek.</p>
+            <p>Telefonuna erişemezsen her kod bir kez, uygulamadaki kodun yerine kullanılabilir. Bir parola yöneticisinde ya da çıktısını alıp güvenli bir yerde sakla.</p>
+            <ul class="recovery-codes">
+                @foreach (var code in codes)
+                {
+                    <li><code>@code</code></li>
+                }
+            </ul>
+        </div>
+    }
+
+    @if (Model.IsEnabled)
+    {
+        <p>Kalan kurtarma kodu: <strong>@Model.RecoveryCodesLeft</strong> / @TwoFactorModel.RecoveryCodeCount</p>
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-error" role="alert"></div>
+        <form method="post" class="form" data-busy-form novalidate>
+            <input type="text" name="username" value="@User.Identity?.Name" autocomplete="username" hidden>
+            <div class="field">
+                <label asp-for="Confirm.Password">Mevcut parola</label>
+                <input asp-for="Confirm.Password" autocomplete="current-password" required maxlength="256">
+                <p class="hint">Kurtarma kodlarını yenilemek ya da iki adımlı doğrulamayı kapatmak için parolanı gir.</p>
+                <span asp-validation-for="Confirm.Password" id="Confirm_Password-error" class="field-error"></span>
+            </div>
+            <div class="button-row">
+                <button type="submit" asp-page-handler="RecoveryCodes" class="btn btn-secondary" data-busy-text="Oluşturuluyor…">Yeni kurtarma kodları oluştur</button>
+                <button type="submit" asp-page-handler="Disable" class="btn btn-danger-ghost" data-busy-text="Kapatılıyor…">İki adımlı doğrulamayı kapat</button>
+            </div>
+            <p class="hint">Yeni kodlar oluşturunca eski kodların hepsi geçersiz olur.</p>
+        </form>
+    }
+    else if (Model.QrCode is null)
+    {
+        <form method="post" asp-page-handler="Setup">
+            <button type="submit" class="btn btn-primary">Kurulumu başlat</button>
+        </form>
+    }
+    else
+    {
+        <h2 id="setup">Kurulum</h2>
+        <ol class="setup-steps">
+            <li>
+                Telefonuna bir doğrulayıcı uygulama kur (Google Authenticator, Microsoft Authenticator, 1Password, Bitwarden vb.).
+            </li>
+            <li>
+                Uygulamada “hesap ekle” deyip bu QR kodunu okut:
+                <div class="qr-box">@Model.QrCode</div>
+                <p class="hint">QR kodunu okutamıyorsan şu anahtarı elle gir:</p>
+                <p><code class="shared-key" id="shared-key">@Model.SharedKey</code></p>
+            </li>
+            <li>Uygulamanın gösterdiği 6 haneli kodu ve parolanı girip onayla.</li>
+        </ol>
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-error" role="alert"></div>
+        <form method="post" asp-page-handler="Enable" class="form" data-busy-form novalidate>
+            <input type="text" name="username" value="@User.Identity?.Name" autocomplete="username" hidden>
+            <div class="field">
+                <label asp-for="Enable.Code">Doğrulama kodu</label>
+                <input asp-for="Enable.Code" class="code-input" inputmode="numeric" autocomplete="one-time-code" required maxlength="16">
+                <span asp-validation-for="Enable.Code" id="Enable_Code-error" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Enable.Password">Mevcut parola</label>
+                <input asp-for="Enable.Password" autocomplete="current-password" required maxlength="256">
+                <span asp-validation-for="Enable.Password" id="Enable_Password-error" class="field-error"></span>
+            </div>
+            <p class="hint">Açtığında diğer cihazlardaki oturumların kapatılır.</p>
+            <button type="submit" class="btn btn-primary" data-busy-text="Etkinleştiriliyor…">İki adımlı doğrulamayı aç</button>
+        </form>
+        <form method="post" asp-page-handler="Setup" class="secondary-action">
+            <button type="submit" class="btn btn-ghost btn-sm">Yeni anahtar oluştur</button>
+        </form>
+    }
+</section>

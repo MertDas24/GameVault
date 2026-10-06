@@ -75,6 +75,23 @@ public sealed class AccountEmails(UserManager<ApplicationUser> users, EmailOutbo
             $"{OutboxKinds.ResetPassword}:{user.Id:N}:{outbox.Bucket(DedupWindow)}", ct);
     }
 
+    /// <summary>İki adımlı doğrulama açıldığında ya da kapatıldığında hesap sahibine bilgi verir.</summary>
+    public async Task SendTwoFactorChangedAsync(ApplicationUser user, bool enabled, CancellationToken ct) =>
+        await outbox.EnqueueAsync(
+            new EmailMessage(user.Email!,
+                enabled ? "Game Vault: iki adımlı doğrulama açıldı" : "Game Vault: iki adımlı doğrulama kapatıldı",
+                $"""
+                Merhaba,
+
+                Game Vault hesabında iki adımlı doğrulama {(enabled ? "açıldı. Bundan sonra girişte parolanın yanında doğrulayıcı uygulamandaki kod da istenecek" : "kapatıldı. Bundan sonra giriş için yalnızca parolan yeterli")}.
+
+                Bu değişikliği sen yapmadıysan hemen parolanı sıfırla:
+
+                {BaseUrl}/Account/ForgotPassword
+                """),
+            OutboxKinds.TwoFactorChanged, user.Id, TimeSpan.FromHours(24),
+            $"{OutboxKinds.TwoFactorChanged}:{user.Id:N}:{enabled}:{outbox.Bucket(TimeSpan.FromMinutes(1))}", ct);
+
     public static string Encode(string token) => WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
     public static bool TryDecode(string encoded, out string token)

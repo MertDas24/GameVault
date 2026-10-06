@@ -69,6 +69,7 @@ public static class OutboxKinds
     public const string ConfirmEmail = "confirm-email";
     public const string AccountExists = "account-exists";
     public const string ResetPassword = "reset-password";
+    public const string TwoFactorChanged = "two-factor-changed";
 }
 
 /// <summary>E-postaları kalıcı kuyruğa yazar.</summary>

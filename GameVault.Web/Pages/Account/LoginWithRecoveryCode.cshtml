@@ -1,0 +1,30 @@
+@page
+@model GameVault.Web.Pages.Account.LoginWithRecoveryCodeModel
+@{
+    ViewData["Title"] = "Kurtarma koduyla giriş";
+}
+<section class="auth-card" aria-labelledby="recovery-heading">
+    <h1 id="recovery-heading">Kurtarma koduyla giriş</h1>
+    <p class="muted">İki adımlı doğrulamayı açarken kaydettiğin kurtarma kodlarından birini gir. Her kod yalnızca bir kez kullanılabilir.</p>
+
+    @if (Model.Error is not null)
+    {
+        <div class="alert alert-error" role="alert">@Model.Error</div>
+    }
+
+    <form method="post" class="form" data-busy-form novalidate>
+        <input type="hidden" asp-for="ReturnUrl">
+        <div class="field">
+            <label asp-for="Input.Code">Kurtarma kodu</label>
+            <input asp-for="Input.Code" class="code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" required maxlength="32" autofocus>
+            <span asp-validation-for="Input.Code" id="Input_Code-error" class="field-error"></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" data-busy-text="Doğrulanıyor…">Giriş yap</button>
+    </form>
+
+    <p class="auth-links">
+        <a href="/Account/LoginWith2fa?returnUrl=@Uri.EscapeDataString(Model.ReturnUrl ?? "/Library")">Uygulamadaki kodu kullan</a>
+        <span aria-hidden="true">·</span>
+        <a href="/Account/Login">Girişe dön</a>
+    </p>
+</section>

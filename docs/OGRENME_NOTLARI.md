@@ -498,6 +498,47 @@ koleksiyonda olabilir (çoka çok ilişki).
 > kendi koleksiyonları içinde arıyorum; listede yoksa reddediyorum. Sorgular da hep `UserId` ile başladığı için
 > başka birinin koleksiyon kimliğiyle filtrelemek boş sonuç döndürür, bilgi sızdırmaz.
 
+### Aşama 11: İki adımlı doğrulama (TOTP 2FA)
+Kullanıcı hesap ayarlarından iki adımlı doğrulamayı açabilir. Açıkken girişte parolanın yanında telefonundaki
+doğrulayıcı uygulamanın (Google/Microsoft Authenticator vb.) ürettiği 6 haneli kod da istenir.
+
+- **TOTP nasıl çalışır?** Sunucu ve telefon aynı gizli anahtarı paylaşır (QR kodu bunu taşır). Her iki taraf da
+  `HMAC-SHA1(anahtar, şu anki zaman / 30 sn)` hesaplayıp sonucu 6 haneye indirir (RFC 6238). Ağ bağlantısı gerekmez;
+  saatlerin yaklaşık aynı olması yeterli. Identity, saat kaymasına karşı birkaç adım öncesini ve sonrasını da kabul eder.
+- **Akış iki adımlı:** Parola doğruysa oturum açılmaz. Identity yalnızca kullanıcı kimliğini taşıyan, 5 dakika ömürlü,
+  şifreli bir ara çerez (`gv_2fa`) yazar ve kullanıcı `/Account/LoginWith2fa`'ya yönlendirilir. Kod doğruysa gerçek
+  oturum açılır. Ara çerez olmadan ikinci adım sayfası girişe geri gönderir.
+- **Kendi giriş akışımızla Identity'yi birleştirme:** Giriş sayfamız parolayı kendisi doğruluyor (hesabın var olup
+  olmadığını zamanlamayla bile sızdırmamak için). Identity'nin "giriş yap ya da 2FA iste" mantığı ise korumalı
+  (`protected`) bir metotta. Küçük bir alt sınıf (`AppSignInManager`) bu metodu dışarı açıyor. Böylece ara çerezin
+  biçimini taklit etmek yerine Identity'nin kendi kodu kullanılıyor; sürüm değişse de bozulmaz.
+- **Kaba kuvvete karşı:** 6 haneli kod = 1 milyon olasılık. 5 hatalı denemede hesap 15 dakika kilitlenir; ayrıca IP ve
+  hesap bazlı oran sınırı var. İnce bir nokta: Identity'nin kendi akışı, 2FA açık kullanıcıda parola doğru girildiğinde
+  hatalı deneme sayacını **sıfırlamaz**. Aksi hâlde parolayı bilen biri her 4 denemede parolayı yeniden girip sayacı
+  sıfırlayarak sınırsız kod deneyebilirdi. Bizim giriş sayfamız da aynı kuralı uyguluyor ve bunu bir test doğruluyor.
+- **Tekrar kullanım (replay) koruması:** Bir kod yaklaşık 2-3 dakika geçerli sayıldığı için, ekranı gören biri aynı
+  kodu tekrar kullanabilirdi. `TotpReplayGuard` son başarılı kodu 5 dakika boyunca reddediyor. Bu Identity'de hazır
+  gelmiyor; bilinçli bir ekleme.
+- **Kurtarma kodları:** Telefon kaybolursa on tek kullanımlık kod. Yalnızca üretildikleri yanıtta bir kez gösterilir
+  (TempData'ya, loga yazılmaz). Yeniden üretmek eskileri geçersiz kılar. Az kod kaldığında kullanıcı uyarılır.
+- **Çalınmış oturuma karşı:** 2FA'yı açmak, kapatmak ve kodları yenilemek mevcut parolayı ister. Aksi hâlde oturumu
+  çalan biri 2FA'yı kendi telefonuna kurup hesap sahibini dışarıda bırakabilirdi. Açılınca diğer oturumlar kapatılır
+  ve sahibine e-posta gider.
+- **QR kodu ve CSP:** QRCoder kütüphanesi yalnızca siyah/beyaz kare matrisini üretiyor; SVG'yi biz çiziyoruz (aşama 8'deki
+  grafik yaklaşımıyla aynı). Böylece satır içi stil ya da `data:` görsel adresi gerekmedi, CSP hiç gevşemedi.
+- **Testlerde kod üretmek:** Testler Identity'nin iç sınıflarını değil, bağımsız yazılmış küçük bir RFC 6238
+  uygulamasını ([Totp.cs](../tests/GameVault.Tests/Infrastructure/Totp.cs)) kullanıyor. Böylece "standart bir
+  doğrulayıcı uygulama bu QR'dan geçerli kod üretebilir mi?" sorusu da test edilmiş oluyor. Kod analizi aracı SHA-1'i
+  "zayıf" diye işaretledi; HMAC-SHA1 standardın gereği olduğu için kural yalnızca o metotta gerekçesiyle kapatıldı.
+- **Bilinen sınırlama:** TOTP anahtarı ve kurtarma kodları veritabanında şifresiz (Identity varsayılanı). Tehdit
+  modelinde artık risk olarak yazıldı.
+
+> **Mülakat sorusu:** "2FA'yı nasıl uyguladın, nelere dikkat ettin?"
+> **Cevap:** Identity'nin TOTP sağlayıcısını kullandım; kriptoyu kendim yazmadım. Üzerine dört şey ekledim: kodun
+> ikinci kez kullanılmasını engelleme, açma/kapatma için parola isteme, açınca diğer oturumları kapatma ve e-posta
+> bildirimi. Kaba kuvvete karşı hesap kilidi var ve parolayı yeniden girmek bu kilidi sıfırlamıyor. Testlerde kodları
+> bağımsız bir RFC 6238 uygulamasıyla ürettim.
+
 ---
 
 ## Kendi notlarım

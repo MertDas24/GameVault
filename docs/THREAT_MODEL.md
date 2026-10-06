@@ -25,8 +25,8 @@ güvenli olduğu anlamına gelmez. Bağımsız bir güvenlik incelemesi yapılma
 
 ## Giriş noktaları
 
-- Herkese açık: `/`, `/Privacy`, `/Account/Login`, `/Account/Register`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Error`, `/health`, `/health/live`, statik dosyalar.
-- Kimlik doğrulama gerektiren: `/Library/**`, `/Stats`, `/Collections`, `/Account/Settings`, `/Account/Export`, `/Account/Import`, `/Account/Delete`, `/Account/Logout` (POST).
+- Herkese açık: `/`, `/Privacy`, `/Account/Login`, `/Account/LoginWith2fa` ve `/Account/LoginWithRecoveryCode` (yalnızca parola doğrulandıktan sonra oluşan ara çerezle işe yarar), `/Account/Register`, `/Account/ForgotPassword`, `/Account/ResetPassword`, `/Error`, `/health`, `/health/live`, statik dosyalar.
+- Kimlik doğrulama gerektiren: `/Library/**`, `/Stats`, `/Collections`, `/Account/Settings`, `/Account/TwoFactor`, `/Account/Export`, `/Account/Import`, `/Account/Delete`, `/Account/Logout` (POST).
 - Operasyon: migration paketi (`efbundle`), geliştirme komutu `seed-demo` (yalnızca Development).
 
 ## Kötüye kullanım senaryoları ve önlemler
@@ -44,6 +44,10 @@ güvenli olduğu anlamına gelmez. Bağımsız bir güvenlik incelemesi yapılma
 | CSRF | Tüm POST'larda antiforgery doğrulaması; SameSite=Lax oturum çerezi; durum değiştiren GET yok | `AuthTests.Post_without_antiforgery_token_is_rejected` |
 | XSS | Razor varsayılan HTML kodlaması; HTML kabul edilmez; CSP satır içi betik/stile izin vermez | `LibraryTests.User_content_is_rendered_as_plain_text`, `SecurityHeadersTests` |
 | SQL enjeksiyonu | EF Core parametreli sorguları; ham SQL yalnızca parametreli interpolasyonla (`SqlQuery($"...")`) | `SearchTests` |
+| Çalınmış parola (credential stuffing) | İsteğe bağlı TOTP iki adımlı doğrulama; ikinci adım ayrı, 5 dk ömürlü şifreli ara çerezle; parola tek başına oturum açtırmaz | `TwoFactorTests.Login_requires_a_valid_code_*`, E2E 2FA testi |
+| 2FA kodu tahmini | 5 hatalı denemede 15 dk hesap kilidi; parolayı yeniden girmek sayacı sıfırlamaz; IP ve hesap bazlı oran sınırı | `TwoFactorTests.Five_wrong_codes_lock_*` |
+| TOTP kodunun tekrar kullanımı | Son başarılı kod 5 dk boyunca reddedilir (`TotpReplayGuard`) | `TwoFactorTests.A_code_that_was_already_used_is_rejected` |
+| Çalınmış oturumla 2FA'yı açma/kapatma | Açma, kapatma ve kurtarma kodu yenileme parola ister; açınca diğer oturumlar kapatılır; sahibine e-posta gider | `TwoFactorTests.Disabling_requires_*`, `TwoFactorTests.Enabling_signs_out_*` |
 | Açık yönlendirme | `returnUrl` yalnızca `Url.IsLocalUrl` ise kullanılır | `AuthTests.Login_ignores_external_return_urls` |
 | Sıfırlama bağlantısı zehirleme (Host başlığı) | Bağlantı `App:PublicBaseUrl` ile kurulur | `PasswordResetTests.Reset_link_uses_configured_public_base_url...` |
 | Çalınmış oturum çerezi | Sunucu tarafı oturum; çıkış/parola değişikliği/sıfırlama/hesap silmede kayıt silinir | `AuthTests.Logout_...`, `AccountTests` |
@@ -61,5 +65,7 @@ güvenli olduğu anlamına gelmez. Bağımsız bir güvenlik incelemesi yapılma
 - **Oturum ve sıfırlama tokenları için izleme/uyarı yoktur.** Şüpheli giriş bildirimleri uygulanmadı.
 - **E-posta teslimi "en az bir kez"dir:** Nadir bir çökme durumunda aynı e-posta (aynı Message-ID ile) iki kez gidebilir.
 - **Migration arşivi (`Legacy_*` tabloları)** eski şemadan yükseltilen veritabanlarında eski katalog verisini tutar. Kullanıcının arşiv satırları hesap silmede silinir; ortak katalog elle kaldırılana kadar kalır.
-- **İki faktörlü doğrulama yoktur.**
+- **İki adımlı doğrulama isteğe bağlıdır.** Açmayan kullanıcı için parola tek faktördür.
+- **TOTP anahtarı ve kurtarma kodları veritabanında şifresiz durur** (Identity varsayılanı, `AspNetUserTokens`). Veritabanını okuyabilen biri ikinci faktörü de elde eder; parola özetleri ise yine korunur. Identity'nin kişisel veri koruması (`ProtectPersonalData`) ile şifrelenebilir; bu sürümde uygulanmadı.
+- **"Bu cihazı hatırla" yoktur:** 2FA açık kullanıcı her girişte kod girer (bilinçli tercih; ek bir kalıcı çerez yok).
 - **Kapak izin listesindeki alan adları** tarayıcıya kullanıcının IP adresini gösterir. Yalnızca güvenilen alan adları eklenmelidir.

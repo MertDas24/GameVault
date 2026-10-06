@@ -46,6 +46,26 @@ public sealed class UserFlowTests(E2EFixture fixture) : IClassFixture<E2EFixture
         await page.WaitForURLAsync("**/Library");
     }
 
+    /// <summary>axe-core ile WCAG 2.0/2.1 A ve AA denetimi; bulgular listeye eklenir.</summary>
+    private static async Task AuditAsync(IPage page, string name, List<string> findings)
+    {
+        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        var result = await page.RunAxe(new AxeRunOptions
+        {
+            RunOnly = new RunOnlyOptions { Type = "tag", Values = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] }
+        });
+        // Sağlamlık kontrolü: axe gerçekten çalıştı mı (ör. CSP enjeksiyonu engellemedi mi)?
+        if (result.Passes.Length < 10)
+        {
+            findings.Add($"{name}: axe yalnızca {result.Passes.Length} kuralı geçerli buldu; denetim çalışmamış olabilir.");
+        }
+
+        foreach (var v in result.Violations)
+        {
+            findings.Add($"{name}: [{v.Impact}] {v.Id} – {v.Help} ({string.Join(", ", v.Nodes.Take(3).Select(n => n.Target.ToString()))})");
+        }
+    }
+
     private static async Task Screenshot(IPage page, string name) =>
         await page.ScreenshotAsync(new() { Path = Path.Combine(E2EFixture.ArtifactsDir, name + ".png"), FullPage = true });
 
@@ -212,24 +232,7 @@ public sealed class UserFlowTests(E2EFixture fixture) : IClassFixture<E2EFixture
         await using var _ctx = context;
         var findings = new List<string>();
 
-        async Task Audit(string name)
-        {
-            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-            var result = await page.RunAxe(new AxeRunOptions
-            {
-                RunOnly = new RunOnlyOptions { Type = "tag", Values = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] }
-            });
-            // Sağlamlık kontrolü: axe gerçekten çalıştı mı (ör. CSP enjeksiyonu engellemedi mi)?
-            if (result.Passes.Length < 10)
-            {
-                findings.Add($"{name}: axe yalnızca {result.Passes.Length} kuralı geçerli buldu; denetim çalışmamış olabilir.");
-            }
-
-            foreach (var v in result.Violations)
-            {
-                findings.Add($"{name}: [{v.Impact}] {v.Id} – {v.Help} ({string.Join(", ", v.Nodes.Take(3).Select(n => n.Target.ToString()))})");
-            }
-        }
+        Task Audit(string name) => AuditAsync(page, name, findings);
 
         foreach (var url in new[] { "/", "/Account/Login", "/Account/Register", "/Account/ForgotPassword", "/Account/ResendConfirmation", "/Privacy", "/yok-boyle-bir-sayfa" })
         {
@@ -365,5 +368,58 @@ public sealed class UserFlowTests(E2EFixture fixture) : IClassFixture<E2EFixture
         await page.GotoAsync(fixture.BaseUrl + "/Library?q=B%C3%BCy%C3%BCk%20Dosya");
         await Assertions.Expect(page.GetByText("80 oyun")).ToBeVisibleAsync();
         Assert.Empty(cspErrors);
+    }
+
+    /// <summary>
+    /// Gerçek tarayıcıda: ayarlardan 2FA kurulumu (QR + anahtar), kurtarma kodları, çıkış, parola + kod ile giriş.
+    /// Kod bağımsız bir RFC 6238 uygulamasıyla üretilir. Kurulum ve giriş sayfaları axe ile denetlenir.
+    /// </summary>
+    [Fact]
+    public async Task User_can_enable_two_factor_and_sign_in_with_a_code()
+    {
+        var (context, page, cspErrors) = await NewPageAsync();
+        await using var __ = context;
+        var findings = new List<string>();
+        var email = $"twofa-{Guid.NewGuid():N}@example.test";
+
+        await RegisterAsync(page, email);
+        await page.GotoAsync(fixture.BaseUrl + "/Account/Settings");
+        await page.GetByRole(AriaRole.Link, new() { Name = "Kur" }).ClickAsync();
+        await page.GetByRole(AriaRole.Button, new() { Name = "Kurulumu başlat" }).ClickAsync();
+
+        await Assertions.Expect(page.Locator("svg.qr")).ToBeVisibleAsync();
+        await AuditAsync(page, "/Account/TwoFactor (kurulum)", findings);
+        await Screenshot(page, "16-two-factor-setup");
+
+        var key = (await page.Locator("#shared-key").InnerTextAsync()).Replace(" ", string.Empty, StringComparison.Ordinal).ToUpperInvariant();
+        var setupCode = GameVault.Tests.Infrastructure.Totp.Now(key);
+        await page.GetByLabel("Doğrulama kodu").FillAsync(setupCode);
+        await page.GetByLabel("Mevcut parola").FillAsync(Password);
+        await page.GetByRole(AriaRole.Button, new() { Name = "İki adımlı doğrulamayı aç" }).ClickAsync();
+
+        await Assertions.Expect(page.Locator("#recovery-codes code")).ToHaveCountAsync(10);
+        await Assertions.Expect(page.Locator("#twofa-status")).ToContainTextAsync("Açık");
+        await AuditAsync(page, "/Account/TwoFactor (açık, kurtarma kodları)", findings);
+
+        await page.Locator(".sidebar").GetByRole(AriaRole.Button, new() { Name = "Çıkış yap" }).ClickAsync();
+        await page.WaitForURLAsync("**/Account/Login");
+        await page.GetByLabel("E-posta").FillAsync(email);
+        await page.GetByLabel("Parola", new() { Exact = true }).FillAsync(Password);
+        await page.GetByRole(AriaRole.Button, new() { Name = "Giriş yap" }).ClickAsync();
+
+        await page.WaitForURLAsync("**/Account/LoginWith2fa**");
+        await AuditAsync(page, "/Account/LoginWith2fa", findings);
+        var loginCode = GameVault.Tests.Infrastructure.Totp.Now(key);
+        if (loginCode == setupCode)
+        {
+            loginCode = GameVault.Tests.Infrastructure.Totp.Previous(key);
+        }
+
+        await page.GetByLabel("Doğrulama kodu").FillAsync(loginCode);
+        await page.GetByRole(AriaRole.Button, new() { Name = "Doğrula ve giriş yap" }).ClickAsync();
+        await page.WaitForURLAsync("**/Library");
+
+        Assert.Empty(cspErrors);
+        Assert.True(findings.Count == 0, "axe bulguları:" + Environment.NewLine + string.Join(Environment.NewLine, findings));
     }
 }
