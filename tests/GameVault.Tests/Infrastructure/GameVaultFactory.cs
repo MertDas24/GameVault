@@ -97,9 +97,23 @@ public class GameVaultFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
         await using var scope = Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<GameVaultDbContext>();
-        await db.Database.EnsureDeletedAsync();
-        await db.Database.MigrateAsync();
+
+        // Test sınıfları paralel çalışır. Yavaş bir CI sunucusunda aynı anda çok sayıda CREATE DATABASE + migration,
+        // varsayılan 30 sn komut zaman aşımını aşabiliyordu; kurulum adımı sınırlanır ve süresi uzatılır.
+        await DatabaseSetupGate.WaitAsync();
+        try
+        {
+            db.Database.SetCommandTimeout(TimeSpan.FromSeconds(120));
+            await db.Database.EnsureDeletedAsync();
+            await db.Database.MigrateAsync();
+        }
+        finally
+        {
+            DatabaseSetupGate.Release();
+        }
     }
+
+    private static readonly SemaphoreSlim DatabaseSetupGate = new(2, 2);
 
     public override async ValueTask DisposeAsync()
     {
