@@ -46,6 +46,20 @@ public sealed class FakeRawgHandler : HttpMessageHandler
 
     private static readonly string SearchJson = $$"""{ "count": 2, "results": [ {{HollowKnightJson}}, {{HostileJson}} ] }""";
 
+    // Keşif (popüler oyunlar): Hollow Knight + kısa, uzun ve süresi bilinmeyen birer oyun. Yalnızca 1. sayfa vardır;
+    // diğer sayfalar gerçek RAWG gibi 404 döner.
+    private static readonly string DiscoverJson = $$"""
+        { "count": 4, "results": [
+          {{HollowKnightJson}},
+          { "id": 1001, "name": "Celeste", "released": "2018-01-25", "playtime": 8, "background_image": null,
+            "platforms": [ { "platform": { "slug": "pc", "name": "PC" } } ], "genres": [ { "slug": "platformer", "name": "Platformer" } ] },
+          { "id": 1002, "name": "Uzun RPG", "released": "2020-05-01", "playtime": 120, "background_image": null,
+            "platforms": [ { "platform": { "slug": "pc", "name": "PC" } } ], "genres": [ { "slug": "role-playing-games-rpg", "name": "RPG" } ] },
+          { "id": 1003, "name": "Süresiz Oyun", "released": null, "playtime": 0, "background_image": null,
+            "platforms": [], "genres": [] }
+        ] }
+        """;
+
     private readonly ConcurrentQueue<HttpRequestMessage> _requests = new();
 
     public IReadOnlyCollection<HttpRequestMessage> Requests => _requests;
@@ -78,6 +92,11 @@ public sealed class FakeRawgHandler : HttpMessageHandler
         if (uri.AbsolutePath.EndsWith("/games", StringComparison.Ordinal) && search is not null)
         {
             return Json(SearchJson);
+        }
+
+        if (uri.AbsolutePath.EndsWith("/games", StringComparison.Ordinal) && query["ordering"] is not null)
+        {
+            return query["page"] == "1" ? Json(DiscoverJson) : new HttpResponseMessage(HttpStatusCode.NotFound);
         }
 
         if (uri.AbsolutePath.EndsWith("/games/9767", StringComparison.Ordinal))

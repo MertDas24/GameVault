@@ -245,4 +245,18 @@ public sealed class SuggestionTests(GameVaultFactory factory) : IClassFixture<Ga
             Assert.Contains("~42 saat", details.Body!.TextContent, StringComparison.Ordinal);
         }
     }
+
+    [Fact]
+    public async Task Discover_tab_explains_that_rawg_is_disabled_without_an_api_key()
+    {
+        var user = await NewUserAsync();
+        using (user.Client)
+        {
+            var (response, doc) = await user.Client.GetPageAsync("/Suggest?source=rawg");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("Keşif bu kurulumda kapalı", doc.QuerySelector("#discover-off")!.TextContent);
+            Assert.Empty(doc.QuerySelectorAll(".discover-card"));
+        }
+    }
 }

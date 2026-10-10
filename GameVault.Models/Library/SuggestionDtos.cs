@@ -36,3 +36,13 @@ public sealed record GameSuggestion(
 /// <param name="MatchCount">Filtrelere uyan oyun sayısı.</param>
 /// <param name="UnknownEstimateCount">Süre filtresi yüzünden elenen, tahmini süresi girilmemiş oyun sayısı.</param>
 public sealed record SuggestionResult(GameSuggestion? Game, int BacklogCount, int MatchCount, int UnknownEstimateCount);
+
+/// <param name="Status">Katalog durumu; kapalı ya da ulaşılamıyorsa öneri yoktur.</param>
+/// <param name="Games">Kütüphanede olmayan, filtrelere uyan rastgele katalog oyunları.</param>
+/// <param name="GenreName">Sorguda kullanılan tür; seçilmemişse kullanıcının en sevdiği tür, o da yoksa null.</param>
+/// <param name="GenreFromTaste">Tür, filtreden değil kullanıcının kütüphanesinden çıkarıldıysa true.</param>
+public sealed record DiscoveryResult(
+    GameVault.Models.Catalog.CatalogStatus Status,
+    IReadOnlyList<GameVault.Models.Catalog.CatalogGame> Games,
+    string? GenreName = null,
+    bool GenreFromTaste = false);

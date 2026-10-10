@@ -9,11 +9,22 @@
 <header class="page-header">
     <div>
         <h1>Ne oynasam?</h1>
-        <p class="muted">Henüz başlamadığın ya da ara verdiğin oyunlardan birini rastgele seçer.</p>
+        <p class="muted">@(Model.Discover
+            ? "RAWG'daki popüler oyunlardan kütüphanende olmayanları önerir."
+            : "Henüz başlamadığın ya da ara verdiğin oyunlardan birini rastgele seçer.")</p>
     </div>
 </header>
 
+<nav class="segmented" aria-label="Öneri kaynağı">
+    <a href="@Model.SourceUrl(false)" aria-current="@(Model.Discover ? null : "page")"><partial name="_Icon" model="@("library")" /> Kütüphanemden</a>
+    <a href="@Model.SourceUrl(true)" aria-current="@(Model.Discover ? "page" : null)"><partial name="_Icon" model="@("search")" /> RAWG'dan keşfet</a>
+</nav>
+
 <form method="get" action="/Suggest" class="filters suggest-filters" aria-label="Öneri filtreleri">
+    @if (Model.Discover)
+    {
+        <input type="hidden" name="source" value="@IndexModel.DiscoverSource">
+    }
     <div class="filter-body">
         <div class="field">
             <label for="s-platform">Platform</label>
@@ -39,21 +50,28 @@
             <label for="s-hours">En fazla süre (saat)</label>
             <input id="s-hours" name="maxHours" type="number" min="1" max="@GameInput.MaxEstimatedHours" step="1" inputmode="numeric" value="@f.MaxHours" placeholder="Sınır yok">
         </div>
-        <div class="field field-check filter-fav">
-            <input id="s-wishlist" name="wishlist" type="checkbox" value="true" checked="@f.IncludeWishlist">
-            <label for="s-wishlist">İstek listesini de dahil et</label>
-        </div>
+        @if (!Model.Discover)
+        {
+            <div class="field field-check filter-fav">
+                <input id="s-wishlist" name="wishlist" type="checkbox" value="true" checked="@f.IncludeWishlist">
+                <label for="s-wishlist">İstek listesini de dahil et</label>
+            </div>
+        }
     </div>
     <div class="filter-actions">
         <button type="submit" class="btn btn-primary">Öner</button>
         @if (f.HasFilters)
         {
-            <a class="btn btn-ghost" href="/Suggest">Temizle</a>
+            <a class="btn btn-ghost" href="@Model.SourceUrlWithoutFilters()">Temizle</a>
         }
     </div>
 </form>
 
-@if (r.BacklogCount == 0)
+@if (Model.Discover)
+{
+    <partial name="_Discover" model="Model" />
+}
+else if (r.BacklogCount == 0)
 {
     <section class="empty-state" aria-labelledby="suggest-empty">
         <partial name="_Icon" model="@("dice")" />

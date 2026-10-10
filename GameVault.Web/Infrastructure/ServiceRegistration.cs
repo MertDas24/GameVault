@@ -222,6 +222,7 @@ public static class ServiceRegistration
         services.AddScoped<CollectionService>();
         services.AddScoped<StatsService>();
         services.AddScoped<SuggestionService>();
+        services.AddScoped<DiscoveryService>();
         services.AddScoped<AccountService>();
         services.AddScoped<ImportService>();
         services.AddScoped<DbRateLimiter>();

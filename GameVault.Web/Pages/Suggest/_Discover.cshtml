@@ -1,0 +1,85 @@
+@model GameVault.Web.Pages.Suggest.IndexModel
+@using GameVault.Models.Catalog
+@{
+    var d = Model.Discovery;
+}
+@if (Model.Message is not null)
+{
+    <div class="alert alert-error" role="alert">@Model.Message</div>
+}
+else if (d is null || d.Status == CatalogStatus.Disabled)
+{
+    <section class="empty-state empty-state-compact" aria-labelledby="discover-off">
+        <h2 id="discover-off">Keşif bu kurulumda kapalı</h2>
+        <p>RAWG entegrasyonu için bir API anahtarı tanımlı değil. Kütüphanendeki oyunlardan öneri almaya devam edebilirsin.</p>
+        <a class="btn btn-secondary" href="@Model.SourceUrl(false)">Kütüphanemden öner</a>
+    </section>
+}
+else if (d.Status == CatalogStatus.Unavailable)
+{
+    <div class="alert alert-error" role="alert">RAWG'a şu an ulaşılamıyor. Biraz sonra yeniden dene.</div>
+}
+else
+{
+    <section aria-labelledby="discover-heading">
+        <div class="discover-head">
+            <div>
+                <p class="suggestion-eyebrow" role="status">
+                    @if (d.GenreName is null)
+                    {
+                        <text>Popüler oyunlar</text>
+                    }
+                    else if (d.GenreFromTaste)
+                    {
+                        <text>Sevdiğin türe göre: @d.GenreName</text>
+                    }
+                    else
+                    {
+                        <text>Tür: @d.GenreName</text>
+                    }
+                </p>
+                <h2 id="discover-heading">Kütüphanende olmayan oyunlar</h2>
+            </div>
+            <a class="btn btn-secondary" href="@Model.SourceUrl(true)"><partial name="_Icon" model="@("dice")" /> Başka öner</a>
+        </div>
+
+        @if (d.Games.Count == 0)
+        {
+            <section class="empty-state empty-state-compact" role="status">
+                <p>Bu filtrelere uyan, kütüphanende olmayan oyun bulunamadı. Başka öner ya da filtreleri değiştir.</p>
+            </section>
+        }
+        else
+        {
+            <ul class="discover-grid">
+                @foreach (var game in d.Games)
+                {
+                    <li class="card discover-card">
+                        <partial name="_Cover" model="@((game.Name, game.CoverUrl, "cover-catalog"))" />
+                        <div class="discover-body">
+                            <h3 class="card-title" title="@game.Name">@game.Name</h3>
+                            <p class="catalog-date">
+                                @(game.Released is { } released ? released.Year.ToString(System.Globalization.CultureInfo.InvariantCulture) : "Çıkış tarihi bilinmiyor")
+                                @if (game.EstimatedHours is { } hours)
+                                {
+                                    <text> · ~@Display.Number(hours) saat</text>
+                                }
+                            </p>
+                            @if (game.Genres.Count > 0)
+                            {
+                                <p class="catalog-tags"><span class="visually-hidden">Türler: </span>@string.Join(" · ", game.Genres.Take(3).Select(g => g.Name))</p>
+                            }
+                        </div>
+                        <div class="discover-action">
+                            <a class="btn btn-secondary btn-sm" href="/Library/New?rawgId=@game.RawgId" aria-label="Kütüphaneye ekle: @game.Name">
+                                <partial name="_Icon" model="@("plus")" /> Kütüphaneye ekle
+                            </a>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+
+        <p class="hint attribution">Oyun verileri <a href="https://rawg.io" rel="noopener noreferrer" target="_blank">RAWG</a> tarafından sağlanır. RAWG'a yalnızca tür ve platform gönderilir.</p>
+    </section>
+}

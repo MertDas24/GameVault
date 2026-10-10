@@ -30,6 +30,10 @@ public sealed partial class GameCatalog(
     public const int MaxQueryLength = 100;
     public const int PageSize = 12;
 
+    /// <summary>Keşif sorgusunun sayfa boyutu ve rastgele seçilecek en yüksek sayfa (en popüler 200 oyun).</summary>
+    public const int DiscoverPageSize = 40;
+    public const int DiscoverMaxPage = 5;
+
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
@@ -85,6 +89,58 @@ public sealed partial class GameCatalog(
             .OfType<CatalogGame>()
             .DistinctBy(g => g.RawgId)
             .Take(PageSize)
+            .ToList();
+
+        Store(cacheKey, (IReadOnlyList<CatalogGame>)games, TimeSpan.FromMinutes(options.Value.SearchCacheMinutes));
+        foreach (var game in games)
+        {
+            Store(GameKey(game.RawgId), game, TimeSpan.FromMinutes(options.Value.GameCacheMinutes));
+        }
+
+        return new CatalogSearchResult(CatalogStatus.Ok, games);
+    }
+
+    /// <summary>
+    /// Keşif: verilen tür ve platformdaki popüler oyunların bir sayfası. RAWG'a yalnızca tür kısa adı,
+    /// platform kimlikleri ve sayfa numarası gider; sonuç tüm kullanıcılar için ortak önbellekte tutulur.
+    /// </summary>
+    public async Task<CatalogSearchResult> DiscoverAsync(string? genreSlug, string? platformIds, int page, CancellationToken ct = default)
+    {
+        if (!IsEnabled)
+        {
+            return CatalogSearchResult.Of(CatalogStatus.Disabled);
+        }
+
+        page = Math.Clamp(page, 1, DiscoverMaxPage);
+        var cacheKey = $"discover:{genreSlug}:{platformIds}:{page.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+        if (_cache.TryGetValue(cacheKey, out IReadOnlyList<CatalogGame>? cached) && cached is not null)
+        {
+            return new CatalogSearchResult(CatalogStatus.Ok, cached);
+        }
+
+        var url = $"games?ordering=-added&page_size={DiscoverPageSize}&page={page.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+        if (genreSlug is not null)
+        {
+            url += "&genres=" + Uri.EscapeDataString(genreSlug);
+        }
+
+        if (platformIds is not null)
+        {
+            url += "&platforms=" + Uri.EscapeDataString(platformIds);
+        }
+
+        var (status, response) = await GetJsonAsync<RawgSearchResponse>(url, ct);
+        if (status != CatalogStatus.Ok)
+        {
+            // RAWG, sonuç sayısını aşan sayfa için 404 döner.
+            return CatalogSearchResult.Of(status == CatalogStatus.NotFound ? CatalogStatus.NotFound : CatalogStatus.Unavailable);
+        }
+
+        var games = (response!.Results ?? [])
+            .Select(RawgMapping.ToCatalogGame)
+            .OfType<CatalogGame>()
+            .DistinctBy(g => g.RawgId)
+            .Take(DiscoverPageSize)
             .ToList();
 
         Store(cacheKey, (IReadOnlyList<CatalogGame>)games, TimeSpan.FromMinutes(options.Value.SearchCacheMinutes));

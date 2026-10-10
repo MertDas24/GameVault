@@ -42,6 +42,26 @@ public static partial class RawgMapping
         ["fighting"] = "Dövüş"
     };
 
+    // GameVault platform adı → RAWG platform kimlikleri (keşif sorgusunda "platforms" parametresi).
+    private static readonly Dictionary<string, string> PlatformIdMap = new(StringComparer.Ordinal)
+    {
+        ["PC"] = "4",
+        ["PlayStation 5"] = "187",
+        ["PlayStation 4"] = "18",
+        ["Xbox Series X|S"] = "186",
+        ["Xbox One"] = "1",
+        ["Nintendo Switch"] = "7",
+        ["Mobil"] = "3,21"
+    };
+
+    /// <summary>GameVault tür adının RAWG kısa adı; eşlenmeyen türler için null.</summary>
+    public static string? GenreSlugFor(string? genreName) =>
+        genreName is null ? null : GenreMap.FirstOrDefault(p => p.Value == genreName).Key;
+
+    /// <summary>GameVault platform adının RAWG platform kimlikleri (virgülle ayrılmış); eşlenmeyenler için null.</summary>
+    public static string? PlatformIdsFor(string? platformName) =>
+        platformName is not null && PlatformIdMap.TryGetValue(platformName, out var ids) ? ids : null;
+
     /// <summary>RAWG oyununu doğrulanmış katalog modeline dönüştürür; kullanılamaz kayıtlar için null döner.</summary>
     internal static CatalogGame? ToCatalogGame(RawgGame? game)
     {

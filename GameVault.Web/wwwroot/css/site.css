@@ -443,6 +443,30 @@ input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; accent-
     .cover-suggestion { max-width: 200px; }
 }
 
+/* Öneri kaynağı sekmeleri (kütüphane / RAWG) */
+.segmented {
+    display: inline-flex; flex-wrap: wrap; gap: .25rem; padding: .25rem; margin-bottom: 1.25rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.segmented a {
+    display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: .4rem .9rem;
+    border-radius: var(--radius-sm); color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: .92rem;
+}
+.segmented a .icon { width: 18px; height: 18px; }
+.segmented a:hover { color: var(--text); background: var(--surface-2); }
+.segmented a[aria-current="page"] { background: var(--accent); color: #fff; }
+
+/* RAWG keşif kartları */
+.discover-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }
+.discover-head h2 { margin: .2rem 0 0; }
+.discover-grid { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.25rem; }
+.discover-card .cover-catalog { border-radius: 0; }
+.discover-body { display: grid; gap: .3rem; padding: 0 .85rem; min-width: 0; }
+.discover-body .card-title { margin: .75rem 0 .1rem; }
+.discover-action { padding: .75rem .85rem .85rem; margin-top: auto; }
+.discover-action .btn { width: 100%; }
+@media (max-width: 480px) { .discover-grid { grid-template-columns: 1fr; } }
+
 /* ---------- RAWG araması ---------- */
 .catalog-results { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
 .catalog-item {
