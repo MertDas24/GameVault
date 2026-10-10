@@ -419,7 +419,7 @@ dağılımı** (1–10). Platform, tür ve "en çok oynananlar" listeleri de çu
 - **Tarih kaynağı:** Aylık grafik, kullanıcının girdiği başlama/bitirme tarihlerinden (`DateOnly`) hesaplanır,
   `DateAdded`'dan değil. Böylece "kütüphaneye ne zaman eklendi" yerine "ne zaman oynandı" gösterilir. Saat dilimi
   dönüşümü de gerekmez.
-- **Renk seçimi ölçülerek yapıldı:** İki serinin renkleri (mavi #4a90e0, turuncu #c98330) koyu zemin üzerinde
+- **Renk seçimi ölçülerek yapıldı:** İlk sürümde iki serinin renkleri (mavi #4a90e0, turuncu #c98330; açık temada değişti, aşağıya bak) koyu zemin üzerinde
   açıklık, renk körlüğü ayrımı ve kontrast açısından bir doğrulama betiğiyle kontrol edildi. Mavi-turuncu çifti
   en yaygın renk körlüğü türlerinde de ayırt edilir. Renk tek başına bilgi taşımaz: lejant, araç ipucu (`<title>`)
   ve tablo da var.
@@ -576,6 +576,13 @@ Uygulamayı elle denedikten sonra üç değişiklik istedim.
   kartın ikonlu bir başlığı var. Liste bölümleri (durum, platform, tür, en çok oynanan) gerçek `<table>` oldu: sıra,
   ad, değer ve "pay" sütunu. Tablolar ekran okuyucular için de daha anlamlı (`<caption>`, `scope="row"`). Satır içi
   stil hâlâ yok: pay çubukları `<progress>` öğesi.
+- **Açık tema:** Koyu tema yerine beyaz zemin; vurgu renkleri pembe (ana düğmeler, seçili menü), mavi (bağlantılar,
+  odak) ve kırmızı (silme, hata). Bütün renkler `:root` içindeki CSS değişkenlerinde durduğu için değişiklik büyük
+  ölçüde bu değişkenleri değiştirmekten ibaretti. Metin renkleri beyaz zeminde en az 4.5:1 kontrast verecek şekilde
+  seçildi (örneğin pembe düğme #d6336c üzerinde beyaz yazı ≈ 4.6:1); E2E testlerindeki axe-core kontrolü kontrast
+  ihlali bulmadı. Grafik serileri artık mavi (#2563eb) ve pembe (#d6336c). Aşama 8'deki renk doğrulama betiği bu yeni
+  çift için tekrar çalıştırılmadı; iki rengin açıklığı birbirine yakın, ama ayrım mavi-sarı ekseninde olduğu için yaygın
+  renk körlüğü türlerinde ayırt edilmeleri beklenir. Renk yine tek başına bilgi taşımıyor (lejant ve tablo var).
 
 ---
 

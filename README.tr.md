@@ -22,7 +22,7 @@
 GameVault, her kullanıcının yalnızca kendisinin görebildiği bir oyun kütüphanesi tuttuğu, sunucu tarafında render
 edilen bir ASP.NET Core web uygulamasıdır. Kullanıcı kapak, platform ve türleriyle oyun ekler; durum, süre ve puan
 takibi yapar; koleksiyonunu arar ve filtreler, istatistiklerini görür, verisinin tamamını dışa aktarabilir, yeniden içe aktarabilir ya da
-silebilir. Arayüz Türkçe ve koyu temalıdır.
+silebilir. Arayüz Türkçedir; beyaz zemin üzerinde pembe, mavi ve kırmızı vurgular kullanır.
 
 > Bu bir **portfolyo projesidir**. Yerelde ve CI'da çalışır; hiçbir ortama dağıtılmamıştır ve gerçek kullanıcı
 > verisi toplamaz.

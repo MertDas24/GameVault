@@ -21,7 +21,7 @@
 
 GameVault is a server-rendered ASP.NET Core web app where every user keeps a private game library. Users can add
 games with covers, platforms and genres, track status, playtime and ratings, filter and search their collection,
-see statistics, and export, re-import or delete all of their data. The UI is in Turkish and uses a dark theme.
+see statistics, and export, re-import or delete all of their data. The UI is in Turkish and uses a light theme with pink, blue and red accents.
 
 > This is a **portfolio project**. It runs locally and in CI, but it is not deployed anywhere and it does not
 > collect real user data.
