@@ -27,6 +27,13 @@ silebilir. Arayüz Türkçedir; beyaz zemin üzerinde pembe, mavi ve kırmızı 
 > Bu bir **portfolyo projesidir**. Yerelde ve CI'da çalışır; hiçbir ortama dağıtılmamıştır ve gerçek kullanıcı
 > verisi toplamaz.
 
+## Tanıtım
+
+![Kısa tanıtım: giriş, kütüphaneyi filtreleme, karttan koleksiyona ekleme, yeni oyun ekleme, öneri alma ve istatistikler](docs/demo.gif)
+
+Kayıt, kurgusal demo verisi üzerinde bir Playwright betiğiyle otomatik üretilir
+([DemoVideo.cs](tests/GameVault.E2E/DemoVideo.cs), [make-demo.ps1](tools/make-demo.ps1)).
+
 ## Ekran görüntüleri
 
 | Kütüphane | Oyun ayrıntısı |
