@@ -17,7 +17,7 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
-    <PackageVersion Include="AngleSharp" Version="1.8.2" />
+    <PackageVersion Include="AngleSharp" Version="1.8.4" />
     <PackageVersion Include="Microsoft.Playwright" Version="1.63.0" />
     <!-- Test-only: axe-core erişilebilirlik denetimi (paket MIT; içindeki axe-core MPL-2.0). -->
     <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.13.0" />
