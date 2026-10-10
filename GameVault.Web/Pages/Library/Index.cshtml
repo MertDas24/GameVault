@@ -144,7 +144,7 @@ else
         <div class="card-grid">
             @foreach (var game in r.Items)
             {
-                <partial name="_GameCard" model="@(new GameCardView(game, Model.CurrentUrl))" />
+                <partial name="_GameCard" model="@(new GameCardView(game, Model.CurrentUrl, Model.Collections))" />
             }
         </div>
 

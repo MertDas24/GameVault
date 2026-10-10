@@ -156,6 +156,78 @@ public sealed class CollectionTests(GameVaultFactory factory) : IClassFixture<Ga
         }
     }
 
+    private static Task<HttpResponseMessage> ToggleFromCardAsync(User user, Guid gameId, int collectionId) =>
+        user.Client.PostFormAsync($"/Library/{gameId}?handler=Collection",
+            [new("collectionId", Id(collectionId)), new("returnUrl", "/Library")], "/Library");
+
+    [Fact]
+    public async Task Library_card_adds_and_removes_a_game_from_a_collection()
+    {
+        var user = await NewUserAsync();
+        using (user.Client)
+        {
+            await user.Client.PostFormAsync("/Collections?handler=Create", [new("name", "Hafta sonu")]);
+            var collectionId = (await CollectionIdsAsync(user.Id))["Hafta sonu"];
+            var game = await user.Client.CreateGameAsync("Karttan Eklenen", user.Pc);
+
+            var (_, page) = await user.Client.GetPageAsync("/Library");
+            var toggle = page.QuerySelector($".card-collections form[action^='/Library/{game}'] button.collection-toggle");
+            Assert.NotNull(toggle);
+            Assert.Equal("false", toggle.GetAttribute("aria-pressed"));
+
+            var added = await ToggleFromCardAsync(user, game, collectionId);
+            Assert.Equal(HttpStatusCode.Redirect, added.StatusCode);
+            Assert.Equal("/Library", added.Headers.Location!.OriginalString);
+            Assert.Equal(["Hafta sonu"], await CollectionsOfGameAsync(game));
+
+            (_, page) = await user.Client.GetPageAsync("/Library");
+            Assert.Equal("true", page.QuerySelector(".card-collections button.collection-toggle")!.GetAttribute("aria-pressed"));
+
+            Assert.Equal(HttpStatusCode.Redirect, (await ToggleFromCardAsync(user, game, collectionId)).StatusCode);
+            Assert.Empty(await CollectionsOfGameAsync(game));
+        }
+    }
+
+    [Fact]
+    public async Task Library_card_respects_the_ten_collection_limit()
+    {
+        var user = await NewUserAsync();
+        using (user.Client)
+        {
+            var names = string.Join(',', Enumerable.Range(1, 10).Select(i => $"K{i}"));
+            var game = await user.Client.CreateGameAsync("Dolu Oyun", user.Pc, "NotStarted", ("Input.NewCollections", names));
+            await user.Client.PostFormAsync("/Collections?handler=Create", [new("name", "K11")]);
+            var eleventh = (await CollectionIdsAsync(user.Id))["K11"];
+
+            Assert.Equal(HttpStatusCode.Redirect, (await ToggleFromCardAsync(user, game, eleventh)).StatusCode);
+            Assert.Equal(10, (await CollectionsOfGameAsync(game)).Count);
+            Assert.DoesNotContain("K11", await CollectionsOfGameAsync(game));
+        }
+    }
+
+    [Fact]
+    public async Task Library_card_toggle_rejects_games_and_collections_of_another_user()
+    {
+        var alice = await NewUserAsync();
+        var bob = await NewUserAsync();
+        using (alice.Client)
+        using (bob.Client)
+        {
+            var aliceGame = await alice.Client.CreateGameAsync("Alice'in Oyunu", alice.Pc, "NotStarted", ("Input.NewCollections", "Alice Özel"));
+            var aliceCollection = (await CollectionIdsAsync(alice.Id))["Alice Özel"];
+            var bobGame = await bob.Client.CreateGameAsync("Bob'un Oyunu", bob.Pc, "NotStarted", ("Input.NewCollections", "Bob Özel"));
+            var bobCollection = (await CollectionIdsAsync(bob.Id))["Bob Özel"];
+
+            // Bob kendi oyununu Alice'in koleksiyonuna, Alice'in oyununu kendi koleksiyonuna ekleyemez ya da çıkaramaz.
+            Assert.Equal(HttpStatusCode.NotFound, (await ToggleFromCardAsync(bob, bobGame, aliceCollection)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await ToggleFromCardAsync(bob, aliceGame, bobCollection)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await ToggleFromCardAsync(bob, aliceGame, aliceCollection)).StatusCode);
+
+            Assert.Equal(["Alice Özel"], await CollectionsOfGameAsync(aliceGame));
+            Assert.Equal(["Bob Özel"], await CollectionsOfGameAsync(bobGame));
+        }
+    }
+
     [Fact]
     public async Task Collections_of_another_user_cannot_be_used_renamed_deleted_or_listed()
     {

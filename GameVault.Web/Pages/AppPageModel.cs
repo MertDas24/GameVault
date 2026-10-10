@@ -41,4 +41,4 @@ public abstract class AppPageModel : PageModel
     }
 }
 
-public sealed record GameCardView(GameCard Game, string ReturnUrl);
+public sealed record GameCardView(GameCard Game, string ReturnUrl, IReadOnlyList<CollectionSummary>? Collections = null);

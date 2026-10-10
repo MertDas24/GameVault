@@ -31,4 +31,24 @@ public sealed class DetailsModel(LibraryService library) : AppPageModel
         Flash(state.Value ? "Favorilere eklendi." : "Favorilerden çıkarıldı.");
         return LocalRedirect(SafeLocalUrl(returnUrl, $"/Library/{id}"));
     }
+
+    public async Task<IActionResult> OnPostCollectionAsync(Guid id, int collectionId, string? returnUrl, CancellationToken ct)
+    {
+        var result = await library.ToggleCollectionAsync(CurrentUserId, id, collectionId, ct);
+        if (result.NotFound)
+        {
+            return NotFound();
+        }
+
+        if (result.Succeeded)
+        {
+            Flash(result.Value ? "Koleksiyona eklendi." : "Koleksiyondan çıkarıldı.");
+        }
+        else
+        {
+            FlashError(result.Errors.Values.First());
+        }
+
+        return LocalRedirect(SafeLocalUrl(returnUrl, $"/Library/{id}"));
+    }
 }

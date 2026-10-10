@@ -381,6 +381,28 @@ input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; accent-
 .fav-btn[aria-pressed="true"] { color: var(--warning-text); }
 .fav-btn[aria-pressed="true"] .icon { fill: currentColor; }
 
+/* Karttan koleksiyona ekleme: liste kartın içinde açılır (kartta overflow: hidden var) */
+.card-collections { border-top: 1px solid var(--border); padding: .35rem .5rem .5rem; }
+.card-collections > summary {
+    display: inline-flex; align-items: center; gap: .35rem; min-height: 36px; padding: 0 .35rem;
+    cursor: pointer; color: var(--accent-2); font-size: .85rem; list-style: none; border-radius: var(--radius-sm);
+}
+.card-collections > summary::-webkit-details-marker { display: none; }
+.card-collections > summary .icon { width: 16px; height: 16px; }
+.card-collections > summary:hover { background: var(--surface-2); }
+.card-collections .hint { margin: .35rem; font-size: .85rem; }
+.card-collection-list { list-style: none; margin: .25rem 0 0; padding: 0; display: grid; gap: .2rem; }
+.card-collection-list form { margin: 0; }
+.collection-toggle {
+    display: flex; align-items: center; gap: .45rem; width: 100%; min-height: 36px; padding: .3rem .45rem;
+    background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm);
+    color: var(--text-muted); font: inherit; font-size: .85rem; text-align: left; cursor: pointer;
+}
+.collection-toggle:hover { background: var(--surface-2); color: var(--text); }
+.collection-toggle .icon { width: 16px; height: 16px; flex: none; opacity: 0; }
+.collection-toggle[aria-pressed="true"] { color: var(--text); background: var(--accent-soft); }
+.collection-toggle[aria-pressed="true"] .icon { opacity: 1; color: var(--success-text); }
+
 /* Kapak: görsel yoksa ya da yüklenemezse baş harfli yedek görünüm */
 .cover { position: relative; aspect-ratio: 3 / 4; overflow: hidden; background: var(--surface-2); }
 .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }

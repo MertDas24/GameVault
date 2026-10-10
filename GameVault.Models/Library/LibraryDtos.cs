@@ -11,7 +11,8 @@ public sealed record GameCard(
     int? Rating,
     int PlaytimeHours,
     bool IsFavorite,
-    DateTime DateAdded);
+    DateTime DateAdded,
+    IReadOnlyList<int>? CollectionIds = null);
 
 public sealed record GameDetails(
     Guid Id,

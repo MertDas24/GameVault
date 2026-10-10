@@ -90,7 +90,8 @@ public sealed class LibraryService(
             .Take(query.PageSize)
             .Select(g => new GameCard(
                 g.Id, g.Title, g.CoverImageUrl, g.Platform.Name, g.Status,
-                g.Rating, g.PlaytimeHours, g.IsFavorite, g.DateAdded))
+                g.Rating, g.PlaytimeHours, g.IsFavorite, g.DateAdded,
+                g.Collections.Select(c => c.Id).ToList()))
             .ToListAsync(ct);
 
         return new PagedResult<GameCard>(items, page, query.PageSize, total);
@@ -395,6 +396,38 @@ public sealed class LibraryService(
         game.UpdatedAtUtc = time.GetUtcNow().UtcDateTime;
         await db.SaveChangesAsync(ct);
         return game.IsFavorite;
+    }
+
+    /// <summary>
+    /// Oyunu koleksiyona ekler ya da koleksiyondan çıkarır. Oyun ya da koleksiyon yoksa veya başkasına aitse
+    /// "bulunamadı" döner; başarıda değer, oyunun artık koleksiyonda olup olmadığıdır.
+    /// </summary>
+    public async Task<OperationResult<bool>> ToggleCollectionAsync(Guid userId, Guid gameId, int collectionId, CancellationToken ct = default)
+    {
+        var game = await OwnedBy(userId).Include(g => g.Collections).FirstOrDefaultAsync(g => g.Id == gameId, ct);
+        var collection = await db.Collections.FirstOrDefaultAsync(c => c.Id == collectionId && c.UserId == userId, ct);
+        if (game is null || collection is null)
+        {
+            return OperationResult<bool>.Missing();
+        }
+
+        var isMember = game.Collections.Contains(collection);
+        if (isMember)
+        {
+            game.Collections.Remove(collection);
+        }
+        else if (game.Collections.Count >= CollectionRules.MaxPerGame)
+        {
+            return OperationResult<bool>.Invalid(nameof(GameInput.CollectionIds), $"Bir oyun en fazla {CollectionRules.MaxPerGame} koleksiyonda olabilir.");
+        }
+        else
+        {
+            game.Collections.Add(collection);
+        }
+
+        game.UpdatedAtUtc = time.GetUtcNow().UtcDateTime;
+        await db.SaveChangesAsync(ct);
+        return OperationResult<bool>.Success(!isMember);
     }
 
     /// <summary>

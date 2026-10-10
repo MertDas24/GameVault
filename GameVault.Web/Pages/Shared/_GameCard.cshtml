@@ -24,4 +24,34 @@
             </button>
         </form>
     </div>
+    @if (Model.Collections is { } collections)
+    {
+        <details class="card-collections">
+            <summary><partial name="_Icon" model="@("folder")" /> Koleksiyon<span class="visually-hidden">: @Model.Game.Title</span></summary>
+            @if (collections.Count == 0)
+            {
+                <p class="hint"><a href="/Collections">Önce bir koleksiyon oluştur</a></p>
+            }
+            else
+            {
+                <ul class="card-collection-list">
+                    @foreach (var c in collections)
+                    {
+                        var isMember = Model.Game.CollectionIds?.Contains(c.Id) == true;
+                        <li>
+                            <form method="post" asp-page="/Library/Details" asp-page-handler="Collection" asp-route-id="@Model.Game.Id">
+                                <input type="hidden" name="collectionId" value="@c.Id">
+                                <input type="hidden" name="returnUrl" value="@Model.ReturnUrl">
+                                <button type="submit" class="collection-toggle" aria-pressed="@(isMember ? "true" : "false")"
+                                        title="@(isMember ? "Koleksiyondan çıkar" : "Koleksiyona ekle")">
+                                    <partial name="_Icon" model="@("check")" />
+                                    <span class="break-anywhere">@c.Name</span>
+                                </button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            }
+        </details>
+    }
 </article>
