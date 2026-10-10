@@ -863,7 +863,7 @@
       "gamevault.tests": {
         "type": "Project",
         "dependencies": {
-          "AngleSharp": "[1.8.2, )",
+          "AngleSharp": "[1.8.4, )",
           "GameVault.Web": "[1.0.0, )",
           "Microsoft.AspNetCore.Mvc.Testing": "[10.0.12, )",
           "Microsoft.NET.Test.Sdk": "[18.10.1, )",
@@ -880,9 +880,9 @@
       },
       "AngleSharp": {
         "type": "CentralTransitive",
-        "requested": "[1.8.2, )",
-        "resolved": "1.8.2",
-        "contentHash": "iRlkfBIhi+gTgTxBlYNT4PlmaiVEy7+qX3BmprAK4cYE1UjfSNFI4mEDyxC1qgtAKYg5rjGYgL3tJlzGF+Ukdg=="
+        "requested": "[1.8.4, )",
+        "resolved": "1.8.4",
+        "contentHash": "lbwt3oqjyxI6x01NT0kRqnudE+gxLqRAs/X49/iVWyguj6OtRfYCanV1mL+jYZgeeAqnGqWzqi7+s5gdtBF1Ag=="
       },
       "MailKit": {
         "type": "CentralTransitive",
