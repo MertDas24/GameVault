@@ -551,6 +551,32 @@ doğrulayıcı uygulamanın (Google/Microsoft Authenticator vb.) ürettiği 6 ha
 > bildirimi. Kaba kuvvete karşı hesap kilidi var ve parolayı yeniden girmek bu kilidi sıfırlamıyor. Testlerde kodları
 > bağımsız bir RFC 6238 uygulamasıyla ürettim.
 
+### Test sonrası iyileştirmeler
+Uygulamayı elle denedikten sonra üç değişiklik istedim.
+
+- **Karttan koleksiyona ekleme:** Kütüphane kartının altına "Koleksiyon" açılır listesi geldi. Her koleksiyon bir
+  form düğmesi; basınca oyun eklenir ya da çıkarılır (`aria-pressed` durumu gösterir). JavaScript yok: `<details>` ve
+  normal POST formları yeterli, işlemden sonra aynı sayfaya (filtreler korunarak) dönülür. Kartta `overflow: hidden`
+  olduğu için liste açılır pencere değil, kartın içinde açılır. Servis (`ToggleCollectionAsync`) hem oyunun hem de
+  koleksiyonun çağırana ait olduğunu kontrol eder ve oyun başına 10 koleksiyon sınırını uygular; testler başka
+  kullanıcının oyunu ya da koleksiyonuyla denemenin 404 döndüğünü doğrular.
+- **RAWG'dan öneri (keşif):** "Ne oynasam?" sayfasına "RAWG'dan keşfet" sekmesi eklendi
+  ([DiscoveryService.cs](../GameVault.Business/Catalog/DiscoveryService.cs)). RAWG'dan seçilen tür ve platformdaki
+  popüler oyunların rastgele bir sayfası alınır (ilk 200 içinden), kütüphanede olanlar RAWG kimliğiyle **ve** adıyla
+  elenir (elle eklenmiş oyunlar da yakalansın diye), kalanlardan 6 tanesi gösterilir.
+  - **Zevke göre tür:** Tür seçilmemişse favori, 8+ puanlı ya da bitirilmiş oyunlarda en sık geçen tür kullanılır. Bu
+    hesap veritabanında yapılır; RAWG'a kullanıcının kütüphanesi değil yalnızca tür kısa adı gider.
+  - **Gizlilik:** RAWG'a giden istekte yalnızca `genres`, `platforms`, `ordering`, `page`, `page_size` ve anahtar var;
+    bunu bir test doğruluyor. Yanıt tüm kullanıcılar için ortak önbellekte tutulur, çünkü kullanıcıya özel değildir.
+  - **Gerçek API davranışı:** RAWG, sonuç sayısını aşan sayfa için 404 döner. Az oyunlu bir tür seçilirse rastgele
+    sayfa boş kalmasın diye ilk sayfaya geri dönülür; sahte RAWG da testlerde aynı şekilde davranıyor.
+  - Aramadaki oran sınırı (kullanıcı başına) keşif için de geçerli.
+- **İstatistik sayfası düzeni:** Önceki ızgara `auto-fit` ile kartları ekran genişliğine göre 2-3 sütuna dağıttığı için
+  yükseklikler uyuşmuyordu. Şimdi sabit iki sütun var (mobilde bir), aynı satırdaki kartlar eşit yükseklikte ve her
+  kartın ikonlu bir başlığı var. Liste bölümleri (durum, platform, tür, en çok oynanan) gerçek `<table>` oldu: sıra,
+  ad, değer ve "pay" sütunu. Tablolar ekran okuyucular için de daha anlamlı (`<caption>`, `scope="row"`). Satır içi
+  stil hâlâ yok: pay çubukları `<progress>` öğesi.
+
 ---
 
 ## Kendi notlarım

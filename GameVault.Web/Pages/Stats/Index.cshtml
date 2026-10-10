@@ -24,17 +24,37 @@
 else
 {
     <section class="stat-tiles" aria-label="Özet">
-        <div class="stat-tile"><span class="stat-label">Toplam oyun</span><span class="stat-value">@Display.Number(s.TotalGames)</span></div>
-        <div class="stat-tile"><span class="stat-label">Toplam oynama</span><span class="stat-value">@Display.Number(s.TotalPlaytimeHours) sa</span></div>
-        <div class="stat-tile"><span class="stat-label">Ortalama puan</span><span class="stat-value">@(s.AverageRating is { } avg ? Display.OneDecimal(avg) : "—")</span><span class="stat-sub">@s.RatedGames oyun puanlandı</span></div>
-        <div class="stat-tile"><span class="stat-label">Tamamlama oranı</span><span class="stat-value">@(s.CompletionRate is { } cr ? Display.Percent(cr) : "—")</span><span class="stat-sub">İstek listesi hariç</span></div>
-        <div class="stat-tile"><span class="stat-label">Favori</span><span class="stat-value">@Display.Number(s.Favorites)</span></div>
+        <div class="stat-tile">
+            <span class="stat-icon"><partial name="_Icon" model="@("library")" /></span>
+            <span class="stat-label">Toplam oyun</span><span class="stat-value">@Display.Number(s.TotalGames)</span>
+        </div>
+        <div class="stat-tile">
+            <span class="stat-icon"><partial name="_Icon" model="@("clock")" /></span>
+            <span class="stat-label">Toplam oynama</span><span class="stat-value">@Display.Number(s.TotalPlaytimeHours) sa</span>
+        </div>
+        <div class="stat-tile">
+            <span class="stat-icon"><partial name="_Icon" model="@("star")" /></span>
+            <span class="stat-label">Ortalama puan</span><span class="stat-value">@(s.AverageRating is { } avg ? Display.OneDecimal(avg) : "—")</span><span class="stat-sub">@s.RatedGames oyun puanlandı</span>
+        </div>
+        <div class="stat-tile">
+            <span class="stat-icon"><partial name="_Icon" model="@("check")" /></span>
+            <span class="stat-label">Tamamlama oranı</span><span class="stat-value">@(s.CompletionRate is { } cr ? Display.Percent(cr) : "—")</span><span class="stat-sub">İstek listesi hariç</span>
+        </div>
+        <div class="stat-tile">
+            <span class="stat-icon stat-icon-fav"><partial name="_Icon" model="@("star")" /></span>
+            <span class="stat-label">Favori</span><span class="stat-value">@Display.Number(s.Favorites)</span>
+        </div>
     </section>
 
     <div class="stats-grid">
-        <section class="panel panel-wide" id="activity" aria-labelledby="activity-heading">
-            <h2 id="activity-heading">Aylık etkinlik</h2>
-            <p class="muted chart-sub">@Model.ActivityRange · oyunlara girdiğin başlama ve bitirme tarihlerinden</p>
+        <section class="panel stat-card panel-wide" id="activity" aria-labelledby="activity-heading">
+            <header class="stat-card-head">
+                <span class="stat-card-icon"><partial name="_Icon" model="@("chart")" /></span>
+                <div>
+                    <h2 id="activity-heading">Aylık etkinlik</h2>
+                    <p class="muted chart-sub">@Model.ActivityRange · oyunlara girdiğin başlama ve bitirme tarihlerinden</p>
+                </div>
+            </header>
             @if (Model.HasActivity)
             {
                 <partial name="_ColumnChart" model="Model.ActivityChart" />
@@ -45,60 +65,100 @@ else
             }
         </section>
 
-        <section class="panel" aria-labelledby="status-heading">
-            <h2 id="status-heading">Durumlara göre</h2>
-            <ul class="bar-list">
-                @foreach (var status in StatusLabels.Ordered)
-                {
-                    var count = s.ByStatus.GetValueOrDefault(status);
-                    <li>
-                        <span class="bar-label"><span class="dot status-@StatusLabels.Key(status)" aria-hidden="true"></span>@StatusLabels.Label(status)</span>
-                        <progress max="@s.TotalGames" value="@count" aria-label="@StatusLabels.Label(status): @count / @s.TotalGames">@count</progress>
-                        <span class="bar-value">@count</span>
-                    </li>
-                }
-            </ul>
+        <section class="panel stat-card" aria-labelledby="status-heading">
+            <header class="stat-card-head">
+                <span class="stat-card-icon"><partial name="_Icon" model="@("library")" /></span>
+                <div>
+                    <h2 id="status-heading">Durumlara göre</h2>
+                    <p class="muted chart-sub">@Display.Number(s.TotalGames) oyunun dağılımı</p>
+                </div>
+            </header>
+            <table class="stat-table">
+                <caption class="visually-hidden">Durumlara göre oyun sayısı</caption>
+                <thead>
+                    <tr><th scope="col">Durum</th><th scope="col" class="num">Oyun</th><th scope="col" class="share-col">Pay</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var status in StatusLabels.Ordered)
+                    {
+                        var count = s.ByStatus.GetValueOrDefault(status);
+                        <tr>
+                            <th scope="row"><span class="status-name"><span class="dot status-@StatusLabels.Key(status)" aria-hidden="true"></span>@StatusLabels.Label(status)</span></th>
+                            <td class="num">@count</td>
+                            <td class="share-col">
+                                <span class="share">
+                                    <progress max="@s.TotalGames" value="@count" aria-hidden="true">@count</progress>
+                                    <span class="share-value">@Display.Percent(count / (double)s.TotalGames)</span>
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </section>
 
-        <section class="panel" id="ratings" aria-labelledby="rating-heading">
-            <h2 id="rating-heading">Puan dağılımı</h2>
+        <section class="panel stat-card" id="ratings" aria-labelledby="rating-heading">
+            <header class="stat-card-head">
+                <span class="stat-card-icon"><partial name="_Icon" model="@("star")" /></span>
+                <div>
+                    <h2 id="rating-heading">Puan dağılımı</h2>
+                    <p class="muted chart-sub">@(s.RatedGames == 0 ? "Puanlı oyun yok" : $"{s.RatedGames} puanlı oyun, 1–10 arası")</p>
+                </div>
+            </header>
             @if (s.RatedGames == 0)
             {
                 <p class="muted">Henüz hiçbir oyuna puan vermedin.</p>
             }
             else
             {
-                <p class="muted chart-sub">@s.RatedGames puanlı oyun, 1–10 arası</p>
                 <partial name="_ColumnChart" model="Model.RatingChart" />
             }
         </section>
 
-        <section class="panel" aria-labelledby="platform-heading">
-            <h2 id="platform-heading">En çok kullanılan platformlar</h2>
-            <partial name="_RankBars" model='(s.TopPlatforms, "oyun")' />
+        <section class="panel stat-card" aria-labelledby="platform-heading">
+            <header class="stat-card-head">
+                <span class="stat-card-icon"><partial name="_Icon" model="@("play")" /></span>
+                <div>
+                    <h2 id="platform-heading">En çok kullanılan platformlar</h2>
+                    <p class="muted chart-sub">Pay: kütüphanedeki oyunlara oranı</p>
+                </div>
+            </header>
+            <partial name="_StatTable" model='(s.TopPlatforms, "Platform", "oyun", (long)s.TotalGames, "Platformlara göre oyun sayısı")' />
         </section>
 
-        <section class="panel" aria-labelledby="genre-heading">
-            <h2 id="genre-heading">En sık türler</h2>
+        <section class="panel stat-card" aria-labelledby="genre-heading">
+            <header class="stat-card-head">
+                <span class="stat-card-icon"><partial name="_Icon" model="@("folder")" /></span>
+                <div>
+                    <h2 id="genre-heading">En sık türler</h2>
+                    <p class="muted chart-sub">Bir oyunun birden fazla türü olabilir</p>
+                </div>
+            </header>
             @if (s.TopGenres.Count == 0)
             {
                 <p class="muted">Oyunlarına henüz tür eklemedin.</p>
             }
             else
             {
-                <partial name="_RankBars" model='(s.TopGenres, "oyun")' />
+                <partial name="_StatTable" model='(s.TopGenres, "Tür", "oyun", (long)s.TotalGames, "Türlere göre oyun sayısı")' />
             }
         </section>
 
-        <section class="panel" aria-labelledby="played-heading">
-            <h2 id="played-heading">En çok oynananlar</h2>
+        <section class="panel stat-card panel-wide" aria-labelledby="played-heading">
+            <header class="stat-card-head">
+                <span class="stat-card-icon"><partial name="_Icon" model="@("clock")" /></span>
+                <div>
+                    <h2 id="played-heading">En çok oynananlar</h2>
+                    <p class="muted chart-sub">Pay: toplam oynama süresine oranı</p>
+                </div>
+            </header>
             @if (s.MostPlayed.Count == 0)
             {
                 <p class="muted">Henüz oynama süresi girilmedi.</p>
             }
             else
             {
-                <partial name="_RankBars" model='(s.MostPlayed, "sa")' />
+                <partial name="_StatTable" model='(s.MostPlayed, "Oyun", "sa", s.TotalPlaytimeHours, "En çok oynanan oyunlar")' />
             }
         </section>
     </div>

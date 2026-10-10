@@ -504,18 +504,53 @@ input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; accent-
 /* ---------- İstatistik ---------- */
 .stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .stat-tile {
-    display: grid; gap: .2rem;
+    display: grid; gap: .2rem; align-content: start;
     background: linear-gradient(160deg, var(--surface-2), var(--surface));
     border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem;
 }
 .stat-label { color: var(--text-muted); font-size: .85rem; }
-.stat-value { font-size: 1.7rem; font-weight: 750; }
+.stat-value { font-size: 1.7rem; font-weight: 750; font-variant-numeric: tabular-nums; }
 .stat-sub { color: var(--text-muted); font-size: .8rem; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
-.bar-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .65rem; }
-.bar-list li { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr) 2.5rem; gap: .75rem; align-items: center; }
-.bar-label { display: inline-flex; align-items: center; gap: .5rem; font-size: .9rem; }
-.bar-value { text-align: right; font-variant-numeric: tabular-nums; }
+.stat-icon {
+    display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-bottom: .35rem;
+    border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--accent-2);
+}
+.stat-icon-fav { color: var(--warning-text); }
+.stat-icon-fav .icon { fill: currentColor; }
+
+/* İstatistik kartları: iki sütunlu, aynı satırdaki kartlar eşit yükseklikte */
+.stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: stretch; }
+@media (max-width: 900px) { .stats-grid { grid-template-columns: minmax(0, 1fr); } }
+.stat-card { display: flex; flex-direction: column; min-width: 0; }
+.stat-card-head {
+    display: flex; align-items: flex-start; gap: .75rem;
+    margin: 0 0 1rem; padding-bottom: .85rem; border-bottom: 1px solid var(--border);
+}
+.stat-card-head h2 { margin: 0; font-size: 1.1rem; }
+.stat-card-head .chart-sub { margin: .2rem 0 0; }
+.stat-card-icon {
+    display: inline-flex; align-items: center; justify-content: center; flex: none; width: 34px; height: 34px;
+    border-radius: var(--radius-sm); background: var(--surface-2); color: var(--accent-2);
+}
+.stat-card-icon .icon { width: 18px; height: 18px; }
+
+.stat-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.stat-table th, .stat-table td { padding: .55rem .5rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+.stat-table tbody tr:last-child > * { border-bottom: 0; }
+.stat-table tbody tr:hover { background: var(--surface-2); }
+.stat-table thead th { color: var(--text-muted); font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.stat-table tbody th { font-weight: 550; }
+.stat-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stat-table .rank-col { width: 2.5rem; color: var(--text-muted); text-align: left; }
+.stat-table .share-col { width: 38%; }
+.share { display: flex; align-items: center; gap: .6rem; }
+.share progress { flex: 1; height: 8px; min-width: 3rem; }
+.share-value { flex: none; width: 3rem; text-align: right; color: var(--text-muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.status-name { display: inline-flex; align-items: center; gap: .5rem; }
+@media (max-width: 480px) {
+    .stat-table .share-col { width: 30%; }
+    .share progress { display: none; }
+}
 .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .dot.status-not-started { background: #8d95bd; }
 .dot.status-playing { background: #6fb6ff; }
@@ -530,13 +565,7 @@ progress {
 progress::-webkit-progress-bar { background: var(--bg-elevated); border-radius: 999px; }
 progress::-webkit-progress-value { background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 999px; }
 progress::-moz-progress-bar { background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 999px; }
-.rank-list { margin: 0; padding-left: 1.25rem; display: grid; gap: .5rem; }
-.rank-list li { padding-left: .25rem; }
-.rank-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
 .rank-value { flex: none; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.rank-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
-.rank-bars li { display: grid; gap: .3rem; }
-.rank-bars progress { height: 8px; }
 
 /* ---------- Grafikler (sunucuda çizilen SVG; renkler sınıflarla, satır içi stil yok) ---------- */
 /* İki seri paleti koyu zemin (#181d31) için doğrulandı: açıklık bandı, renk körlüğü ayrımı (ΔE ≥ 24), kontrast ≥ 3:1. */

@@ -72,7 +72,7 @@ What I focused on, beyond the CRUD:
   backoff.
 - **Resilient external API.** The RAWG game database is called through `IHttpClientFactory` with a timeout, a
   bounded cache and a simple circuit breaker. When RAWG fails, the page shows a message and the rest of the app keeps
-  working. RAWG receives only the search text. The API key lives in User Secrets and never shows up in logs, which a
+  working. RAWG receives only the search text, or a genre and platform for discovery. The API key lives in User Secrets and never shows up in logs, which a
   test checks.
 - **Real tests.** 200+ integration tests run against a real SQL Server through `WebApplicationFactory`. Playwright
   E2E tests cover desktop and mobile flows, and axe-core checks accessibility (WCAG 2.1 A/AA).
@@ -83,12 +83,12 @@ What I focused on, beyond the CRUD:
 
 | Area | What you can do |
 |---|---|
-| Library | Cover-first cards, search by title, filter by status, platform, genre, collection or favorite, 7 sort orders, pagination |
+| Library | Cover-first cards, search by title, filter by status, platform, genre, collection or favorite, 7 sort orders, pagination. Each card can add the game to or remove it from a collection in one click. |
 | Games | Title, cover (8 built-in covers or an allow-listed https URL), description, platform, up to 5 genres, status, playtime, 1–10 rating, notes, start/finish/release dates, estimated hours to beat, favorite, collections. Warns before adding a title that is already in the library. |
 | Collections | Personal lists such as "Weekend" or "With friends". Create them on the collections page or by typing a name in the game form; a game can be in up to 10. Renaming or deleting a collection never touches the games. |
 | RAWG search | Search [RAWG](https://rawg.io) by title, see cover, release date, platforms and genres, then pick a result to prefill the add form. Each user can add a RAWG game only once. |
-| What should I play? | Random pick from the backlog (not started, on hold and optionally wishlist), filtered by platform, genre and max estimated hours. "Pick another" skips the last pick, and "Start playing" marks the game as playing. |
-| Statistics | Total games and hours, average rating, completion rate, status breakdown, started vs. finished games per month (last 12 months), rating distribution, top platforms and genres, most played. Charts are server-rendered SVG (no chart library, no inline styles), each with a table view. |
+| What should I play? | Random pick from the backlog (not started, on hold and optionally wishlist), filtered by platform, genre and max estimated hours. "Pick another" skips the last pick, and "Start playing" marks the game as playing. A discover tab suggests popular RAWG games that are not in the library yet, by the chosen genre or by the genre the user rates highest. |
+| Statistics | Summary tiles, then cards for status breakdown, started vs. finished games per month (last 12 months), rating distribution, top platforms and genres, and most played games. Lists are tables with rank, value and share columns. Charts are server-rendered SVG (no chart library, no inline styles), each with a table view. |
 | Account | Registration with email confirmation, password reset, display name, password change, sign out other sessions, optional two-factor authentication (authenticator app + recovery codes), JSON export and import (check-first mode, duplicates skipped), account deletion |
 | UX | Responsive layout with a sidebar on desktop and a bottom nav on mobile, keyboard accessible, `aria-invalid` form errors, reduced motion support |
 
@@ -183,7 +183,7 @@ antiforgery token.
 | `/Library` | user | Search, filter, sort and paginate the user's games (`?q=&status=&platform=&genre=&collection=&fav=&sort=&size=&page=`) |
 | `/Library/New`, `/Library/{id}`, `/Library/{id}/Edit`, `/Library/{id}/Delete` | user (owner only) | Create, view, edit and delete a game |
 | `/Library/Search?q=` · `/Library/New?rawgId=` | user | Search RAWG, then prefill the add form from a result |
-| `/Suggest?platform=&genre=&maxHours=&wishlist=` | user | "What should I play?" suggestion. A POST with `handler=Start` marks the game as playing. |
+| `/Suggest?platform=&genre=&maxHours=&wishlist=` | user | "What should I play?" suggestion. A POST with `handler=Start` marks the game as playing. `source=rawg` shows the RAWG discover tab. |
 | `/Stats` | user | Statistics from the user's own data |
 | `/Collections` | user (owner only) | List, create, rename and delete collections |
 | `/Account/Settings`, `/Account/TwoFactor`, `/Account/Export`, `/Account/Import`, `/Account/Delete` | user | Profile, password, sessions, two-factor authentication, JSON export and import, account deletion |

@@ -1,0 +1,33 @@
+@model (IReadOnlyList<GameVault.Models.Stats.NamedCount> Items, string NameHeader, string Unit, long Total, string Caption)
+@{
+    // Pay sütunu, öğenin toplama oranıdır (örneğin oyunların yüzde kaçı PC'de).
+    var total = Math.Max(1, Model.Total);
+}
+<table class="stat-table">
+    <caption class="visually-hidden">@Model.Caption</caption>
+    <thead>
+        <tr>
+            <th scope="col" class="num rank-col">#</th>
+            <th scope="col">@Model.NameHeader</th>
+            <th scope="col" class="num">@(Model.Unit == "sa" ? "Süre" : "Oyun")</th>
+            <th scope="col" class="share-col">Pay</th>
+        </tr>
+    </thead>
+    <tbody>
+        @for (var i = 0; i < Model.Items.Count; i++)
+        {
+            var item = Model.Items[i];
+            <tr>
+                <td class="num rank-col">@(i + 1)</td>
+                <th scope="row" class="break-anywhere">@item.Name</th>
+                <td class="num">@Display.Number(item.Count) @Model.Unit</td>
+                <td class="share-col">
+                    <span class="share">
+                        <progress max="@total" value="@item.Count" aria-hidden="true">@item.Count</progress>
+                        <span class="share-value">@Display.Percent(item.Count / (double)total)</span>
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

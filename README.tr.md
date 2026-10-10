@@ -73,7 +73,7 @@ $env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/Game
   gönderilir ve hata durumunda artan aralıklarla yeniden denenir.
 - **Dayanıklı harici API.** RAWG oyun veritabanı `IHttpClientFactory` üzerinden çağrılır; zaman aşımı, boyutu
   sınırlı bir önbellek ve basit bir devre kesici vardır. RAWG hata verirse sayfa bir mesaj gösterir, uygulamanın geri
-  kalanı çalışmaya devam eder. RAWG'a yalnızca arama metni gider. API anahtarı User Secrets'ta durur ve loglara asla
+  kalanı çalışmaya devam eder. RAWG'a yalnızca arama metni, keşifte ise tür ve platform gider. API anahtarı User Secrets'ta durur ve loglara asla
   yazılmaz; bunu bir test doğrular.
 - **Gerçek testler.** 200'den fazla entegrasyon testi `WebApplicationFactory` üzerinden gerçek bir SQL Server'a karşı
   çalışır. Playwright E2E testleri masaüstü ve mobil akışları kapsar, axe-core da erişilebilirliği (WCAG 2.1 A/AA)
@@ -85,12 +85,12 @@ $env:GAMEVAULT_SCREENSHOTS_DIR = "$PWD/docs/screenshots"; dotnet test tests/Game
 
 | Alan | İçerik |
 |---|---|
-| Kütüphane | Kapak odaklı kartlar; ada göre arama; durum, platform, tür, koleksiyon ve favori filtreleri; 7 sıralama; sayfalama |
+| Kütüphane | Kapak odaklı kartlar; ada göre arama; durum, platform, tür, koleksiyon ve favori filtreleri; 7 sıralama; sayfalama. Her karttan oyun tek tıkla bir koleksiyona eklenip çıkarılabilir. |
 | Oyunlar | Ad, kapak (8 hazır kapak ya da izinli https adresi), açıklama, platform, en fazla 5 tür, durum, süre, 1–10 puan, notlar, başlama, bitirme ve çıkış tarihleri, tahmini bitirme süresi, favori, koleksiyonlar. Kütüphanede aynı adlı oyun varsa eklemeden önce uyarır. |
 | Koleksiyonlar | "Hafta sonu", "Arkadaşlarla" gibi kişisel listeler. Koleksiyonlar sayfasında ya da oyun formunda ad yazarak oluşturulur; bir oyun en fazla 10 koleksiyonda olabilir. Koleksiyonu yeniden adlandırmak ya da silmek oyunlara dokunmaz. |
 | RAWG araması | [RAWG](https://rawg.io)'da isimle arama; kapak, çıkış tarihi, platform ve türleri görüp bir sonucu seçerek ekleme formunu doldurma. Her kullanıcı bir RAWG oyununu yalnızca bir kez ekleyebilir. |
-| Ne oynasam? | Sıradaki oyunlardan (başlanmamış, ara verilmiş, isteğe bağlı olarak istek listesi) platform, tür ve en fazla tahmini süreye göre rastgele öneri. “Başka öner” son öneriyi atlar, “Oynamaya başla” oyunu “Oynuyorum” olarak işaretler. |
-| İstatistikler | Toplam oyun ve süre, ortalama puan, tamamlama oranı, durum dağılımı, son 12 ayda aylık başlanan ve bitirilen oyunlar, puan dağılımı, en çok kullanılan platform ve türler, en çok oynananlar. Grafikler sunucuda SVG olarak çizilir (grafik kütüphanesi ve satır içi stil yok); her birinin tablo görünümü vardır. |
+| Ne oynasam? | Sıradaki oyunlardan (başlanmamış, ara verilmiş, isteğe bağlı olarak istek listesi) platform, tür ve en fazla tahmini süreye göre rastgele öneri. “Başka öner” son öneriyi atlar, “Oynamaya başla” oyunu “Oynuyorum” olarak işaretler. “RAWG'dan keşfet” sekmesi, seçilen türe ya da kullanıcının en çok sevdiği türe göre kütüphanede olmayan popüler oyunlar önerir. |
+| İstatistikler | Özet kutucukları; ardından durum dağılımı, son 12 ayda aylık başlanan ve bitirilen oyunlar, puan dağılımı, en çok kullanılan platform ve türler ve en çok oynananlar için kartlar. Listeler sıra, değer ve pay sütunlu tablolardır. Grafikler sunucuda SVG olarak çizilir (grafik kütüphanesi ve satır içi stil yok); her birinin tablo görünümü vardır. |
 | Hesap | E-posta doğrulamalı kayıt, parola sıfırlama, görünen ad, parola değiştirme, diğer oturumları kapatma, isteğe bağlı iki adımlı doğrulama (doğrulayıcı uygulama + kurtarma kodları), JSON dışa ve içe aktarma (önce kontrol modu, kopyalar atlanır), hesap silme |
 | Arayüz | Masaüstünde yan menü, mobilde alt gezinme çubuğu; klavyeyle kullanım; `aria-invalid` ile form hataları; azaltılmış hareket desteği |
 
@@ -185,7 +185,7 @@ tokenı ile korunan bir HTML form gönderimidir.
 | `/Library` | kullanıcı | Oyunları arama, filtreleme, sıralama ve sayfalama (`?q=&status=&platform=&genre=&collection=&fav=&sort=&size=&page=`) |
 | `/Library/New`, `/Library/{id}`, `/Library/{id}/Edit`, `/Library/{id}/Delete` | kullanıcı (yalnızca sahibi) | Oyun ekleme, görüntüleme, düzenleme ve silme |
 | `/Library/Search?q=` · `/Library/New?rawgId=` | kullanıcı | RAWG'da arama ve seçilen sonuçla ekleme formunu doldurma |
-| `/Suggest?platform=&genre=&maxHours=&wishlist=` | kullanıcı | “Ne oynasam?” önerisi. `handler=Start` ile yapılan POST, oyunu “Oynuyorum” olarak işaretler. |
+| `/Suggest?platform=&genre=&maxHours=&wishlist=` | kullanıcı | “Ne oynasam?” önerisi. `handler=Start` ile yapılan POST, oyunu “Oynuyorum” olarak işaretler. `source=rawg` RAWG keşif sekmesini açar. |
 | `/Stats` | kullanıcı | Kullanıcının kendi verisinden istatistikler |
 | `/Collections` | kullanıcı (yalnızca sahibi) | Koleksiyonları listeleme, oluşturma, yeniden adlandırma ve silme |
 | `/Account/Settings`, `/Account/TwoFactor`, `/Account/Export`, `/Account/Import`, `/Account/Delete` | kullanıcı | Profil, parola, oturumlar, iki adımlı doğrulama, JSON dışa ve içe aktarma, hesap silme |
