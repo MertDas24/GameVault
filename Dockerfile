@@ -29,7 +29,7 @@ RUN dotnet tool restore \
  && dotnet ef migrations bundle --project GameVault.DataAccess --startup-project GameVault.DataAccess \
       --configuration Release -o /out/efbundle
 
-FROM mcr.microsoft.com/dotnet/runtime:10.0.12 AS migrator
+FROM mcr.microsoft.com/dotnet/runtime:10.0.13 AS migrator
 COPY --from=migrations-build /out/efbundle /efbundle
 USER $APP_UID
 # Kullanım: docker run --rm <imaj> --connection "<bağlantı dizesi>"
