@@ -11,7 +11,7 @@
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.12" />
     <PackageVersion Include="MailKit" Version="4.18.1" />
     <!-- 2FA kurulumunda QR kodu (MIT). Yalnızca modül matrisi kullanılır; SVG uygulama tarafından çizilir. -->
-    <PackageVersion Include="QRCoder" Version="1.8.0" />
+    <PackageVersion Include="QRCoder" Version="1.8.1" />
     <!-- Testler -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
