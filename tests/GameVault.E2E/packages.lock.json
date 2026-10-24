@@ -4,11 +4,11 @@
     "net10.0": {
       "Deque.AxeCore.Playwright": {
         "type": "Direct",
-        "requested": "[4.13.0, )",
-        "resolved": "4.13.0",
-        "contentHash": "tqzqVEsQfVg4fmx9/AkbgYjVMYHHOGI7WkTznKuP8ayi0uaBcd+2skOfxnVdUBlEhpHdu9stzxOZ6uPVhIS2JA==",
+        "requested": "[4.14.0, )",
+        "resolved": "4.14.0",
+        "contentHash": "3iY/i8yPmLlfAGNI3lAlxqVyEI533Tr2jNQF0IE5Iqbund06rlbF17AYrWXAxQuSHunMSX29xHV69BklKJktPQ==",
         "dependencies": {
-          "Deque.AxeCore.Commons": "4.13.0",
+          "Deque.AxeCore.Commons": "4.14.0",
           "Microsoft.Playwright": "1.20.2",
           "System.IO.Abstractions": "17.0.24"
         }
@@ -26,19 +26,19 @@
       },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
-        "requested": "[18.10.1, )",
-        "resolved": "18.10.1",
-        "contentHash": "SxCFvJE/2ltUQgCgv6+Ixagohw4sZc9hM7Wid2foaNM7paBscktoHLoRDz91fW8wbHG87Rg9Ku59/8PXumqUrA==",
+        "requested": "[18.11.0, )",
+        "resolved": "18.11.0",
+        "contentHash": "xf/bR0LNkhK0SnadDRlZIQmC4sac5Wk0e1WAdiQjRN3MSo6gQ9M2c4c1XRNnVGjfOvckh704W5CJ19AL0/Xsdg==",
         "dependencies": {
-          "Microsoft.CodeCoverage": "18.10.1",
-          "Microsoft.TestPlatform.TestHost": "18.10.1"
+          "Microsoft.CodeCoverage": "18.11.0",
+          "Microsoft.TestPlatform.TestHost": "18.11.0"
         }
       },
       "Microsoft.Playwright": {
         "type": "Direct",
-        "requested": "[1.63.0, )",
-        "resolved": "1.63.0",
-        "contentHash": "O9F45Tt5vjauIo7mTTgQtahigL7cfRLvBMpErLJfdvgCnQ14yue5BmRASNnfNBWRBni4Mqp2YiD1eFGIO4nUUw==",
+        "requested": "[1.64.1, )",
+        "resolved": "1.64.1",
+        "contentHash": "DO8plHiCCUS/54XZxhsuzGtxI4RkyJ/5XOlVFoT0A0K1jNYdGhntry36ivkPjcCbv0uz6P/PmJ35gUgnAYGbiw==",
         "dependencies": {
           "Microsoft.Bcl.AsyncInterfaces": "6.0.0",
           "System.ComponentModel.Annotations": "5.0.0"
@@ -86,8 +86,8 @@
       },
       "Deque.AxeCore.Commons": {
         "type": "Transitive",
-        "resolved": "4.13.0",
-        "contentHash": "roq2z6OmKY4KVXGj1lSigUbjE7DnIcYLqPOVcnWrusS6CI7oB6/He8Oo3ZO/TCOlnaTS1hkJOuKPwL+PyhyC6w==",
+        "resolved": "4.14.0",
+        "contentHash": "6UpFIkOwSfJTstNrpbN3dDKsHrVCd+v5XKJt5xeRu0JIkkGN2P42CspxiJYxdgmtW2wYnK2kpYwowJa3ML0GZg==",
         "dependencies": {
           "NewtonSoft.Json": "13.0.1"
         }
@@ -141,8 +141,8 @@
       },
       "Microsoft.CodeCoverage": {
         "type": "Transitive",
-        "resolved": "18.10.1",
-        "contentHash": "tV7tCyp/t+DuwQugLkCeUN7NBFFB4fEGRPr0gkMQ2nQgAvQQjmGlZZi1dsLzbyoe/A0mbnKybmkIh8qhT9p4Zw=="
+        "resolved": "18.11.0",
+        "contentHash": "MhN9wpvL1Es4hfIYslrsVgIsUdDFxuOBTbAl9mGIMvFo8PP5CLf4DrGdNrfwWSyn0lqi6sssm+I/qkkLL3MU+g=="
       },
       "Microsoft.Data.SqlClient": {
         "type": "Transitive",
@@ -655,15 +655,15 @@
       },
       "Microsoft.TestPlatform.ObjectModel": {
         "type": "Transitive",
-        "resolved": "18.10.1",
-        "contentHash": "o+PuLDRVp1iwiVAPBADZItXgm9Ck23XtPhE4kZtZVi0uYnMiiz1Dx9Cjh75kJ+ijfqnORL3VOTOaQVKi0f/ixg=="
+        "resolved": "18.11.0",
+        "contentHash": "BXBHYnwSOljKute8UYCMXOLAdB7awxEMppPSpqOF1ZxLD/W/OH+vTBgFaXA7q0aditJTVXSMVenel+wOkEIyNg=="
       },
       "Microsoft.TestPlatform.TestHost": {
         "type": "Transitive",
-        "resolved": "18.10.1",
-        "contentHash": "KYz2omqkoz9E2mWa4fdgT+Ycie1wi5968EmyJlusjlp87RxxtA2FvDm8tcBEYIDzLnkWGnsKjE4d13Z7/rxkQA==",
+        "resolved": "18.11.0",
+        "contentHash": "AKjwKpyRBwoQFQmpcchtoYlfJEBlaY/40uxBRi+qXP4NR7xT8t+XTJtOyEyumfvfJcH5pASs75LwNdXYRr4XNA==",
         "dependencies": {
-          "Microsoft.TestPlatform.ObjectModel": "18.10.1"
+          "Microsoft.TestPlatform.ObjectModel": "18.11.0"
         }
       },
       "Microsoft.Win32.Registry": {
@@ -863,10 +863,10 @@
       "gamevault.tests": {
         "type": "Project",
         "dependencies": {
-          "AngleSharp": "[1.8.4, )",
+          "AngleSharp": "[1.8.5, )",
           "GameVault.Web": "[1.0.0, )",
           "Microsoft.AspNetCore.Mvc.Testing": "[10.0.12, )",
-          "Microsoft.NET.Test.Sdk": "[18.10.1, )",
+          "Microsoft.NET.Test.Sdk": "[18.11.0, )",
           "xunit.v3": "[3.2.2, )"
         }
       },
@@ -880,9 +880,9 @@
       },
       "AngleSharp": {
         "type": "CentralTransitive",
-        "requested": "[1.8.4, )",
-        "resolved": "1.8.4",
-        "contentHash": "lbwt3oqjyxI6x01NT0kRqnudE+gxLqRAs/X49/iVWyguj6OtRfYCanV1mL+jYZgeeAqnGqWzqi7+s5gdtBF1Ag=="
+        "requested": "[1.8.5, )",
+        "resolved": "1.8.5",
+        "contentHash": "BUgFIpmkjwMPi6QneHUHaprjUOGSXoWEF/xi/2seHCpnI8XMHACNiC09rn9qL8jbxrP8jWyJ3DnOjsGvXWNGmw=="
       },
       "MailKit": {
         "type": "CentralTransitive",
