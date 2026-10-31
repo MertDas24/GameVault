@@ -36,7 +36,7 @@ USER $APP_UID
 ENTRYPOINT ["/efbundle"]
 
 # --- Çalışma zamanı (varsayılan hedef) ---
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.12 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS runtime
 WORKDIR /app
 ENV ASPNETCORE_HTTP_PORTS=8080 \
     ASPNETCORE_ENVIRONMENT=Production \
